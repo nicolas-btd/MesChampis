@@ -1,0 +1,35 @@
+# Environnements virtuels Python
+.venv/
+env/
+venv/
+ENV/
+
+# Caches et fichiers temporaires Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Données brutes volumineuses IGN (BD Forêt & BD ALTI)
+data/raw/*
+!data/raw/bdforet/
+!data/raw/bdalti/
+data/raw/bdforet/*
+!data/raw/bdforet/.gitkeep
+data/raw/bdalti/*
+!data/raw/bdalti/.gitkeep
+
+# Données générées / exports
+data/out/*
+!data/out/.gitkeep
+
+# Données web synchronisées
+web/data/*
+!web/data/.gitkeep
+!web/data/especes.json
+
+# Fichiers système et IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
