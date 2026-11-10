@@ -1,0 +1,49 @@
+[
+  { "id": "bolet-cepe-bordeaux", "nom": "Cèpe de Bordeaux", "latin": "Boletus edulis", "groupe": "bolets" },
+  { "id": "bolet-cepe-ete", "nom": "Cèpe d'été", "latin": "Boletus reticulatus", "groupe": "bolets" },
+  { "id": "bolet-cepe-pins", "nom": "Cèpe des pins", "latin": "Boletus pinophilus", "groupe": "bolets" },
+  { "id": "bolet-cepe-bronze", "nom": "Cèpe bronzé", "latin": "Boletus aereus", "groupe": "bolets" },
+  { "id": "bolet-bai", "nom": "Bolet bai", "latin": "Imleria badia", "groupe": "bolets" },
+  { "id": "bolet-pied-rouge", "nom": "Bolet à pied rouge", "latin": "Neoboletus luridiformis", "groupe": "bolets" },
+  { "id": "bolet-orange-chenes", "nom": "Bolet orangé des chênes", "latin": "Leccinum aurantiacum", "groupe": "bolets" },
+  { "id": "bolet-melezes", "nom": "Bolet des mélèzes", "latin": "Suillus grevillei", "groupe": "bolets" },
+  { "id": "bolet-granuleux", "nom": "Bolet granuleux (pissacan)", "latin": "Suillus granulatus", "groupe": "bolets" },
+  { "id": "bolet-fiel", "nom": "Bolet de fiel (amer)", "latin": "Tylopilus felleus", "groupe": "bolets" },
+  { "id": "bolet-satan", "nom": "Bolet satan", "latin": "Rubroboletus satanas", "groupe": "bolets" },
+
+  { "id": "chanterelle-girolle", "nom": "Girolle commune", "latin": "Cantharellus cibarius", "groupe": "chanterelles" },
+  { "id": "chanterelle-tube", "nom": "Chanterelle en tube", "latin": "Craterellus tubaeformis", "groupe": "chanterelles" },
+  { "id": "chanterelle-trompette-morts", "nom": "Trompette des morts", "latin": "Craterellus cornucopioides", "groupe": "chanterelles" },
+  { "id": "chanterelle-amethyste", "nom": "Girolle améthyste", "latin": "Cantharellus amethysteus", "groupe": "chanterelles" },
+  { "id": "chanterelle-jaunissante", "nom": "Chanterelle jaunissante", "latin": "Craterellus lutescens", "groupe": "chanterelles" },
+
+  { "id": "lactaire-delicieux", "nom": "Lactaire délicieux", "latin": "Lactarius deliciosus", "groupe": "lactaires" },
+  { "id": "lactaire-sanguin", "nom": "Lactaire sanguin", "latin": "Lactarius sanguifluus", "groupe": "lactaires" },
+  { "id": "lactaire-poivre", "nom": "Lactaire poivré", "latin": "Lactifluus piperatus", "groupe": "lactaires" },
+  { "id": "lactaire-roux", "nom": "Lactaire roux", "latin": "Lactarius rufus", "groupe": "lactaires" },
+  { "id": "lactaire-veloute", "nom": "Lactaire velouté", "latin": "Lactifluus vellereus", "groupe": "lactaires" },
+
+  { "id": "russule-charbonniere", "nom": "Russule charbonnière", "latin": "Russula cyanoxantha", "groupe": "russules" },
+  { "id": "russule-verdoyante", "nom": "Russule verdoyante (palomet)", "latin": "Russula virescens", "groupe": "russules" },
+  { "id": "russule-emetique", "nom": "Russule émétique", "latin": "Russula emetica", "groupe": "russules" },
+  { "id": "russule-ocre-blanche", "nom": "Russule ocre et blanche", "latin": "Russula ochroleuca", "groupe": "russules" },
+  { "id": "russule-feuille-morte", "nom": "Russule feuille-morte", "latin": "Russula xerampelina", "groupe": "russules" },
+
+  { "id": "amanite-cesars", "nom": "Amanite des Césars", "latin": "Amanita caesarea", "groupe": "amanites" },
+  { "id": "amanite-rougissante", "nom": "Amanite rougissante (golmotte)", "latin": "Amanita rubescens", "groupe": "amanites" },
+  { "id": "amanite-panthere", "nom": "Amanite panthère", "latin": "Amanita pantherina", "groupe": "amanites" },
+  { "id": "amanite-tue-mouches", "nom": "Amanite tue-mouches", "latin": "Amanita muscaria", "groupe": "amanites" },
+  { "id": "amanite-phalloide", "nom": "Amanite phalloïde", "latin": "Amanita phalloides", "groupe": "amanites" },
+  { "id": "amanite-citrine", "nom": "Amanite citrine", "latin": "Amanita citrina", "groupe": "amanites" },
+
+  { "id": "morille-commune", "nom": "Morille commune", "latin": "Morchella esculenta", "groupe": "morilles" },
+  { "id": "morille-conique", "nom": "Morille conique", "latin": "Morchella conica", "groupe": "morilles" },
+  { "id": "morillon-commun", "nom": "Morillon commun", "latin": "Mitrophora semilibera", "groupe": "morilles" },
+
+  { "id": "autre-pied-mouton", "nom": "Pied-de-mouton", "latin": "Hydnum repandum", "groupe": "autres" },
+  { "id": "autre-lepiote-elevee", "nom": "Lépiote élevée (coulemelle)", "latin": "Macrolepiota procera", "groupe": "autres" },
+  { "id": "autre-coprin-chevelu", "nom": "Coprin chevelu", "latin": "Coprinus comatus", "groupe": "autres" },
+  { "id": "autre-clitocybe-nebuleux", "nom": "Clitocybe nébuleux", "latin": "Clitocybe nebularis", "groupe": "autres" },
+  { "id": "autre-clitocybe-amethyste", "nom": "Laccaria améthyste", "latin": "Laccaria amethystina", "groupe": "autres" },
+  { "id": "autre-marasme-oreades", "nom": "Marasme des Oréades (mousseron)", "latin": "Marasmius oreades", "groupe": "autres" }
+]
