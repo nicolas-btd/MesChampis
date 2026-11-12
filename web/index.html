@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>MesChampis — Grille écologique forestière 25 m</title>
+  <meta name="description" content="Webapp cartographique d'aide à la cueillette de champignons : exploration sur grille raster de 25 m (altitude, pente, exposition, lisières).">
+  
+  <!-- MapLibre GL JS (local vendor) -->
+  <link rel="stylesheet" href="vendor/maplibre-gl.css">
+  <script src="vendor/maplibre-gl.js"></script>
+
+  <!-- Proj4js (Reprojection EPSG:2154 Lambert-93) -->
+  <script src="vendor/proj4.js"></script>
+
+  <!-- Favicon & PWA -->
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
+  <link rel="manifest" href="app.webmanifest">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Conteneur principal de la carte plein écran -->
+  <div id="map" class="map-container"></div>
+
+  <!-- Écran d'accueil pour utilisateur non connecté (Style Carnet de Terrain Écologique) -->
+  <div id="hero-accueil-non-connecte" class="hero-accueil-overlay hidden">
+    <div class="hero-card">
+      <div class="hero-card-header">
+        <div class="hero-top-seal">
+          <svg class="hero-emblem-svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2C6.5 2 2 6.5 2 12c0 .6.4 1 1 1h18c.6 0 1-.4 1-1 0-5.5-4.5-10-10-10z"></path>
+            <path d="M10 13v7a2 2 0 0 0 4 0v-7"></path>
+            <circle cx="8" cy="7" r="1" fill="currentColor"></circle>
+            <circle cx="16" cy="7" r="1" fill="currentColor"></circle>
+          </svg>
+          <span class="hero-meta-badge">Massif du Puy-de-Dôme • Grille Raster 25 m</span>
+        </div>
+        <button id="btn-fermer-hero" class="btn-modal-close btn-hero-close" type="button" aria-label="Fermer l'accueil (Échap)" title="Fermer l'accueil (Échap)">✕</button>
+      </div>
+      <h2 class="hero-title">Herbier Forestier & Carnet de Cueillette Confidentiel</h2>
+      <p class="hero-subtitle">
+        Cartographie écologique haute résolution et journal de terrain chiffré de bout en bout. Vos coins et observations restent strictement confidentiels.
+      </p>
+      <div class="hero-features">
+        <div class="hero-feature-item">
+          <span class="hero-feature-icon">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+          </span>
+          <div>
+            <strong>Confidentialité Zero-Knowledge</strong>
+            <p>Clé maître dérivée sur votre appareil. Vos coordonnées GPS ne sont jamais lisibles sur le serveur.</p>
+          </div>
+        </div>
+        <div class="hero-feature-item">
+          <span class="hero-feature-icon">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+              <polyline points="2 17 12 22 22 17"></polyline>
+              <polyline points="2 12 12 17 22 12"></polyline>
+            </svg>
+          </span>
+          <div>
+            <strong>Grille écologique haute précision (25 m)</strong>
+            <p>Croisement LiDAR HD, BD ALTI et BD Forêt IGN : exposition, altitude, pente, lisières et essences.</p>
+          </div>
+        </div>
+        <div class="hero-feature-item">
+          <span class="hero-feature-icon">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+            </svg>
+          </span>
+          <div>
+            <strong>Recommandations prédictives</strong>
+            <p>Cartes de chaleur des biotopes forestiers les plus favorables selon l'altitude et les essences.</p>
+          </div>
+        </div>
+      </div>
+      <div class="hero-actions">
+        <button id="btn-hero-inscription" class="btn-primary btn-large" type="button">Créer un compte</button>
+        <button id="btn-hero-connexion" class="btn-secondary btn-large" type="button">Se connecter</button>
+      </div>
+      <div class="hero-footer-link">
+        <button id="btn-hero-decouverte" class="btn-link-sm" type="button">Continuer vers la carte en mode invité →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Écran de chargement initial -->
+  <div id="loading-overlay" class="loading-overlay">
+    <div class="loading-card">
+      <div class="naturalist-spinner">
+        <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2C6.5 2 2 6.5 2 12c0 .6.4 1 1 1h18c.6 0 1-.4 1-1 0-5.5-4.5-10-10-10z"></path>
+          <path d="M10 13v7a2 2 0 0 0 4 0v-7"></path>
+        </svg>
+      </div>
+      <h2 id="loading-title">Initialisation de l'Herbier...</h2>
+      <p id="loading-desc">Chargement de la grille raster 25 m et des données forestières du Puy-de-Dôme.</p>
+      <div class="progress-bar">
+        <div id="progress-bar-fill" class="progress-bar-fill"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Message d'erreur en cas d'échec -->
+  <div id="error-banner" class="error-banner hidden">
+    <div class="error-content">
+      <strong>Notice de fonctionnement</strong>
+      <p id="error-message"></p>
+    </div>
+  </div>
+
+  <!-- Bandeau permanent Mode Démo -->
+  <div id="demo-permanent-banner" class="demo-permanent-banner hidden">
+    <div class="demo-banner-content">
+      <span class="demo-banner-pill">MODE DÉMO</span>
+      <span>Données fictives de démonstration, serveur simulé en local (aucun transfert externe)</span>
+    </div>
+  </div>
+
+  <!-- Barre de navigation supérieure de terrain -->
+  <header class="app-header">
+    <div class="app-brand">
+      <div class="brand-badge-icon">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2C6.5 2 2 6.5 2 12c0 .6.4 1 1 1h18c.6 0 1-.4 1-1 0-5.5-4.5-10-10-10z"></path>
+          <path d="M10 13v7a2 2 0 0 0 4 0v-7"></path>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <h1 class="app-title">MesChampis</h1>
+        <span class="app-tagline">Grille écologique 25 m • 63</span>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <!-- Indicateur de synchronisation -->
+      <div id="badge-sync-statut" class="sync-badge sync-ok" title="Statut de synchronisation Zero-Knowledge">
+        <span class="sync-dot"></span>
+        <span class="sync-label-text">Synchronisé</span>
+      </div>
+
+      <!-- Bouton d'accès au compte / réglages -->
+      <button id="btn-nav-compte" class="btn-carnet-nav btn-compte-nav" title="Compte et Paramètres">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+        <span class="btn-compte-text">Mon compte</span>
+      </button>
+
+      <!-- Bouton d'accès au carnet -->
+      <button id="btn-open-carnet" class="btn-carnet-nav" title="Mon carnet de cueillette">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+          <line x1="9" y1="7" x2="16" y2="7"></line>
+          <line x1="9" y1="11" x2="14" y2="11"></line>
+        </svg>
+        <span class="btn-carnet-text">Mon carnet</span>
+        <span id="carnet-compteur-badge" class="carnet-badge-count">0</span>
+      </button>
+
+      <!-- Sélecteur de fond de carte IGN -->
+      <div class="basemap-toggle" role="group" aria-label="Choix du fond cartographique">
+        <button id="btn-basemap-plan" class="btn-toggle" title="Afficher le Plan IGN">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8">
+            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+            <line x1="8" y1="2" x2="8" y2="18"></line>
+            <line x1="16" y1="6" x2="16" y2="22"></line>
+          </svg>
+          <span>Plan IGN</span>
+        </button>
+        <button id="btn-basemap-ortho" class="btn-toggle active" title="Afficher les photos aériennes IGN">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="12" r="9"></circle>
+            <path d="M3.6 9h16.8"></path>
+            <path d="M3.6 15h16.8"></path>
+            <path d="M11.5 3a17 17 0 0 0 0 18"></path>
+            <path d="M12.5 3a17 17 0 0 1 0 18"></path>
+          </svg>
+          <span>Aérien IGN</span>
+        </button>
+      </div>
+
+      <!-- Bouton Me localiser -->
+      <button id="btn-locate" class="btn-icon" title="Me localiser (GPS local uniquement)">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="8"></circle>
+          <line x1="12" y1="2" x2="12" y2="6"></line>
+          <line x1="12" y1="18" x2="12" y2="22"></line>
+          <line x1="2" y1="12" x2="6" y2="12"></line>
+          <line x1="18" y1="12" x2="22" y2="12"></line>
+          <circle cx="12" cy="12" r="3" fill="currentColor"></circle>
+        </svg>
+        <span class="btn-label">GPS</span>
+      </button>
+
+      <!-- Bouton bascule panneau sur mobile -->
+      <button id="btn-toggle-panel" class="btn-icon mobile-only" title="Afficher/masquer les options">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Indicateur de zoom (quand zoom < 8.5) -->
+  <div id="zoom-hint" class="zoom-hint hidden" aria-live="polite">
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="11" cy="11" r="8"></circle>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+    </svg>
+    <span>Zoomez sur la carte pour explorer la grille 25 m (zoom ≥ 8.5)</span>
+  </div>
+
+  <!-- Mention permanente carte de chaleur démo -->
+  <div id="mention-chaleur-demo" class="mention-chaleur-demo hidden">
+    <span>Carte de chaleur : <strong>Aperçu indicatif de démonstration écologique</strong></span>
+  </div>
+
+  <!-- Panneau flottant de légende et sélecteur de grille -->
+  <aside id="side-panel" class="side-panel">
+    <div class="panel-header">
+      <h2>Grille écologique (25 m)</h2>
+      <button id="btn-close-panel" class="btn-close mobile-only" aria-label="Fermer" title="Fermer">✕</button>
+    </div>
+
+    <!-- Sélecteur de couche de grille (Colorier par) -->
+    <div class="panel-section">
+      <span class="control-label">Indicateur cartographique :</span>
+      <div class="coloration-tabs grid-tabs-5" role="tablist">
+        <button class="btn-color-tab active" data-mode="expo" id="tab-mode-expo" title="Exposition solaire">
+          <span class="tab-glyph">🧭</span> Expo
+        </button>
+        <button class="btn-color-tab" data-mode="alt" id="tab-mode-alt" title="Altitude en mètres">
+          <span class="tab-glyph">⛰</span> Alt
+        </button>
+        <button class="btn-color-tab" data-mode="pente" id="tab-mode-pente" title="Pente en degrés">
+          <span class="tab-glyph">∠</span> Pente
+        </button>
+        <button class="btn-color-tab" data-mode="lisiere" id="tab-mode-lisiere" title="Distance à la lisière">
+          <span class="tab-glyph">⸙</span> Lisière
+        </button>
+        <button class="btn-color-tab" data-mode="essence" id="tab-mode-essence" title="Essence forestière BD Forêt">
+          <span class="tab-glyph">↟</span> Essence
+        </button>
+        <button class="btn-color-tab" data-mode="couvert" id="tab-mode-couvert" title="Couvert arboré LiDAR HD (%)">
+          <span class="tab-glyph">☁</span> Couvert
+        </button>
+        <button class="btn-color-tab" data-mode="hauteur" id="tab-mode-hauteur" title="Hauteur de canopée (m)">
+          <span class="tab-glyph">↕</span> Hauteur
+        </button>
+        <button class="btn-color-tab btn-chaleur-tab" data-mode="chaleur" id="tab-mode-chaleur" title="Carte de chaleur écologique (Recommandations)">
+          <span class="tab-glyph">◈</span> Recommandations
+        </button>
+      </div>
+    </div>
+
+    <!-- Contrôle d'opacité de la grille -->
+    <div class="panel-section">
+      <div class="slider-row">
+        <label for="slider-opacity" class="control-label">Opacité du calque :</label>
+        <span id="slider-opacity-val" class="slider-val">85%</span>
+      </div>
+      <input type="range" id="slider-opacity" min="10" max="100" value="85" class="custom-slider">
+    </div>
+
+    <!-- Couche secondaire : Limites BD Forêt -->
+    <div class="panel-section">
+      <label class="checkbox-container">
+        <input type="checkbox" id="check-limites-foret">
+        <span class="checkmark"></span>
+        <span class="checkbox-label">Limites de massifs BD Forêt</span>
+      </label>
+    </div>
+
+    <!-- Couche secondaire : Cueillettes personnelles -->
+    <div class="panel-section">
+      <label class="checkbox-container">
+        <input type="checkbox" id="check-afficher-cueillettes" checked>
+        <span class="checkmark"></span>
+        <span class="checkbox-label">Afficher mes observations</span>
+      </label>
+    </div>
+
+    <!-- Conteneur dynamique de la légende -->
+    <div class="panel-section">
+      <div id="legend-container" class="legend-container">
+        <!-- Rempli dynamiquement par js/legende.js -->
+      </div>
+    </div>
+
+    <!-- Indicateurs d'état -->
+    <div class="panel-footer">
+      <div class="stat-pill">
+        <span class="stat-num" id="stat-tuiles-count">233</span>
+        <span class="stat-label">tuiles actives</span>
+      </div>
+      <div class="stat-pill">
+        <span class="stat-num">25 m</span>
+        <span class="stat-label">résolution</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Bandeau d'instruction Mode Positionnement Manuel sur la carte -->
+  <div id="bandeau-positionnement-carte" class="bandeau-positionnement hidden">
+    <div class="bandeau-positionnement-content">
+      <span class="positionnement-icon">🎯</span>
+      <div class="positionnement-text">
+        <strong>Pointez votre trouvaille sur la carte</strong>
+        <span class="positionnement-sub">Cliquez à l'endroit précis où vous l'avez observée</span>
+      </div>
+      <button id="btn-annuler-positionnement" class="btn-annuler-positionnement" type="button" title="Annuler le positionnement">
+        ✕ Annuler <span class="shortcut-hint">(Échap)</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Bouton d'action flottant (+ Trouvaille) et son menu -->
+  <div class="fab-container">
+    <div id="fab-menu" class="fab-menu hidden">
+      <button id="fab-opt-carte" class="fab-option-btn fab-opt-principal" type="button">
+        <span class="fab-opt-icon">🎯</span>
+        <div class="fab-opt-text-block">
+          <span class="fab-opt-label">Poser sur la carte</span>
+          <span class="fab-opt-desc">Cibler un point précis au curseur</span>
+        </div>
+      </button>
+      <button id="fab-opt-gps" class="fab-option-btn" type="button">
+        <span class="fab-opt-icon">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"></path>
+            <circle cx="12" cy="10" r="3"></circle>
+          </svg>
+        </span>
+        <div class="fab-opt-text-block">
+          <span class="fab-opt-label">Ma position GPS</span>
+          <span class="fab-opt-desc">Positionnement automatique en direct</span>
+        </div>
+      </button>
+      <button id="fab-opt-rien" class="fab-option-btn fab-opt-rien" type="button">
+        <span class="fab-opt-icon">🍃</span>
+        <div class="fab-opt-text-block">
+          <span class="fab-opt-label">Rien trouvé ici</span>
+          <span class="fab-opt-desc">Noter une absence pour l'analyse</span>
+        </div>
+      </button>
+    </div>
+    <button id="btn-fab-carnet" class="fab-main-btn" title="Ajouter une trouvaille" type="button">
+      <span class="fab-plus-icon">+</span>
+      <span class="fab-text">Trouvaille</span>
+    </button>
+  </div>
+
+  <!-- Bannière de rappel sauvegarde .mcb -->
+  <div id="rappel-export-banner" class="rappel-export-banner hidden">
+    <div class="rappel-export-content">
+      <span class="rappel-icon">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+          <polyline points="17 21 17 13 7 13 7 21"></polyline>
+          <polyline points="7 3 7 8 15 8"></polyline>
+        </svg>
+      </span>
+      <div class="rappel-text">
+        <strong>Sauvegarde chiffrée recommandée</strong>
+        <p>Vos observations sont stockées sur votre appareil. Exportez une copie sécurisée (.mcb).</p>
+      </div>
+      <div class="rappel-actions">
+        <button id="btn-rappel-export-maintenant" class="btn-rappel-action primary" type="button">Sauvegarder</button>
+        <button id="btn-rappel-export-tard" class="btn-rappel-action secondary" type="button">Plus tard</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale Formulaire d'observation ultra-simple (Desktop panneau / Mobile plein écran) -->
+  <div id="modal-carnet-form" class="modal-backdrop hidden">
+    <div class="modal-card modal-form-card">
+      <div class="modal-header">
+        <h2 id="form-carnet-title">Ajouter une trouvaille</h2>
+        <button id="btn-close-form-modal" class="btn-modal-close" type="button" aria-label="Fermer">✕</button>
+      </div>
+
+      <!-- Bascule Trouvé / Rien -->
+      <div class="type-toggle-bar">
+        <button id="btn-type-trouve" class="btn-type-toggle active" type="button">🍄 Trouvé</button>
+        <button id="btn-type-rien" class="btn-type-toggle" type="button">🍃 Rien trouvé ici</button>
+      </div>
+
+      <div class="modal-body form-body-scrollable">
+        <!-- Section spécifique si Trouvé -->
+        <div id="form-section-trouve" class="form-section-trouve">
+          <!-- Espèce avec suggestions et sélection ultra-rapide -->
+          <div class="form-group">
+            <label for="carnet-espece" class="form-label">Espèce de champignon :</label>
+            <div class="autocomplete-wrapper">
+              <input type="text" id="carnet-espece" class="form-input" placeholder="Ex: Cèpe de Bordeaux, Girolle..." autocomplete="off">
+              <div id="carnet-espece-suggestions" class="suggestions-list" style="display:none;"></div>
+            </div>
+            <!-- Pastilles de sélection rapide -->
+            <div class="quick-species-wrapper">
+              <span class="quick-species-title">Accès direct :</span>
+              <div class="quick-species-chips">
+                <button type="button" class="btn-quick-species" data-espece="Cèpe de Bordeaux">Cèpe de Bordeaux</button>
+                <button type="button" class="btn-quick-species" data-espece="Girolle">Girolle</button>
+                <button type="button" class="btn-quick-species" data-espece="Chanterelle en tube">Chanterelle en tube</button>
+                <button type="button" class="btn-quick-species" data-espece="Pied-de-mouton">Pied-de-mouton</button>
+                <button type="button" class="btn-quick-species" data-espece="Trompette de la mort">Trompette de la mort</button>
+                <button type="button" class="btn-quick-species" data-espece="Morille">Morille</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quantité -->
+          <div class="form-group">
+            <span class="form-label">Quantité récoltée / observée :</span>
+            <div class="radio-pill-group">
+              <label class="radio-pill">
+                <input type="radio" name="carnet-quantite" value="1-5" checked>
+                <span>1 à 5</span>
+              </label>
+              <label class="radio-pill">
+                <input type="radio" name="carnet-quantite" value="5-20">
+                <span>5 à 20</span>
+              </label>
+              <label class="radio-pill">
+                <input type="radio" name="carnet-quantite" value="20+">
+                <span>20+</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Date de la sortie -->
+        <div class="form-group">
+          <label for="carnet-date" class="form-label">Date :</label>
+          <input type="date" id="carnet-date" class="form-input">
+        </div>
+
+        <!-- Note personnelle facultative -->
+        <div class="form-group">
+          <label for="carnet-note" class="form-label">Notes personnelles (facultatif) :</label>
+          <textarea id="carnet-note" class="form-textarea" rows="2" placeholder="Repère visuel, état du sol, humidité..."></textarea>
+        </div>
+
+        <!-- Position et analyse écologique automatique 25 m -->
+        <div class="form-group form-eco-box">
+          <div class="form-coords-header">
+            <span class="form-label">🌱 Milieu & essences <span class="badge-eco-auto">Auto 25 m</span></span>
+            <span id="carnet-form-coords" class="form-coords-val">—</span>
+          </div>
+          <div id="cell-preview-box" class="cell-preview-box">
+            <div id="cell-hors-grille-warning" class="cell-warning hidden">
+              ⚠️ Point situé hors de la grille raster 25 m couverte.
+            </div>
+            <div class="cell-mini-grid">
+              <div class="cell-mini-stat"><span class="lbl">Essence (BD Forêt)</span><span id="preview-cell-essence" class="val">—</span></div>
+              <div class="cell-mini-stat"><span class="lbl">Altitude</span><span id="preview-cell-alt" class="val">—</span></div>
+              <div class="cell-mini-stat"><span class="lbl">Couvert</span><span id="preview-cell-couvert" class="val">—</span></div>
+              <div class="cell-mini-stat"><span class="lbl">Hauteur</span><span id="preview-cell-hauteur" class="val">—</span></div>
+              <div class="cell-mini-stat"><span class="lbl">Lisière</span><span id="preview-cell-lisiere" class="val">—</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Avertissement légal et sanitaire obligatoire en pied -->
+        <div class="form-safety-footer">
+          <p class="safety-p">⚠️ <strong>Avertissement :</strong> MesChampis ne sert pas à identifier les champignons. Ne consommez jamais une récolte sans vérification par un pharmacien ou un mycologue.</p>
+          <p class="safety-sub">Respectez la propriété privée et les arrêtés locaux de cueillette.</p>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button id="btn-cancel-carnet" class="btn-secondary" type="button">Annuler</button>
+        <button id="btn-submit-carnet" class="btn-primary" type="button">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale Écran "Mon carnet" -->
+  <div id="modal-mon-carnet" class="modal-backdrop hidden">
+    <div class="modal-card modal-carnet-card">
+      <div class="modal-header">
+        <div class="modal-title-with-badge">
+          <h2>Mon carnet de cueillette</h2>
+          <span class="privacy-badge">🔒 100% Hors-ligne</span>
+        </div>
+        <button id="btn-close-mon-carnet" class="btn-modal-close" type="button" aria-label="Fermer">✕</button>
+      </div>
+
+      <!-- Compteurs -->
+      <div class="carnet-stats-row">
+        <div class="carnet-stat-card">
+          <span id="stat-carnet-sorties" class="cstat-num">0</span>
+          <span class="cstat-label">Sorties totales</span>
+        </div>
+        <div class="carnet-stat-card">
+          <span id="stat-carnet-especes" class="cstat-num">0</span>
+          <span class="cstat-label">Espèces trouvées</span>
+        </div>
+        <div class="carnet-stat-card">
+          <span id="stat-carnet-rien" class="cstat-num">0</span>
+          <span class="cstat-label">« Rien trouvé »</span>
+        </div>
+      </div>
+
+      <!-- Barre de filtres -->
+      <div class="carnet-filters-bar">
+        <input type="text" id="carnet-filtre-recherche" class="filter-input-search" placeholder="🔍 Rechercher espèce, note...">
+        <select id="carnet-filtre-type" class="filter-select">
+          <option value="tous">Tous les types</option>
+          <option value="trouve">🍄 Trouvé</option>
+          <option value="rien">🍃 Rien trouvé</option>
+        </select>
+        <select id="carnet-filtre-annee" class="filter-select">
+          <option value="toutes">Toutes les années</option>
+        </select>
+      </div>
+
+      <!-- Liste des observations -->
+      <div id="carnet-items-list" class="carnet-items-scrollable">
+        <!-- Rempli dynamiquement -->
+      </div>
+
+      <!-- État du stockage et boutons Sauvegarde/Restauration -->
+      <div class="carnet-storage-panel">
+        <div class="storage-info">
+          <div><strong>Stockage local :</strong> <span id="stat-stockage-persist">Standard</span> • <span id="stat-stockage-total">0 observations</span></div>
+          <div class="storage-date">Dernier export : <span id="stat-stockage-export">Jamais</span></div>
+        </div>
+        <div class="storage-btns">
+          <button id="btn-open-export" class="btn-storage" type="button">💾 Sauvegarder (.mcb)</button>
+          <button id="btn-open-import" class="btn-storage" type="button">📥 Restaurer (.mcb)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale Export Chiffré .mcb -->
+  <div id="modal-export-mcb" class="modal-backdrop hidden">
+    <div class="modal-card modal-crypto-card">
+      <div class="modal-header">
+        <h2>Sauvegarde chiffrée (.mcb)</h2>
+        <button id="btn-close-export" class="btn-modal-close" type="button" aria-label="Fermer">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="crypto-intro">
+          Vos données sont chiffrées sur votre appareil avec l'algorithme <strong>AES-GCM 256 bits</strong> dérivé par <strong>PBKDF2</strong> (250 000 itérations).
+        </p>
+        <div class="crypto-warning-box">
+          ⚠️ <strong>Attention :</strong> Ce mot de passe sera demandé pour restaurer votre sauvegarde. Notez-le simplement.
+        </div>
+        <div class="form-group">
+          <label for="export-pass-1" class="form-label">Phrase ou mot de passe :</label>
+          <input type="password" id="export-pass-1" class="form-input" placeholder="Votre mot de passe...">
+        </div>
+        <div class="form-group">
+          <label for="export-pass-2" class="form-label">Confirmer le mot de passe :</label>
+          <input type="password" id="export-pass-2" class="form-input" placeholder="Confirmez...">
+        </div>
+        <div id="export-error-msg" class="crypto-error"></div>
+      </div>
+      <div class="modal-actions" style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <button id="btn-do-export" class="btn-primary" type="button">🔐 Chiffrer et Exporter</button>
+        <p class="crypto-hint" style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; text-align: center; margin: 0;">
+          Enregistrez la sauvegarde hors du téléphone (iCloud Drive, Google Drive, e-mail à vous-même) : si le téléphone est perdu, elle seule permet de tout récupérer.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale Restauration Chiffrée .mcb -->
+  <div id="modal-import-mcb" class="modal-backdrop hidden">
+    <div class="modal-card modal-crypto-card">
+      <div class="modal-header">
+        <h2>Restaurer une sauvegarde (.mcb)</h2>
+        <button id="btn-close-import" class="btn-modal-close" type="button" aria-label="Fermer">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="import-file-input" class="form-label">Fichier de sauvegarde (.mcb) :</label>
+          <input type="file" id="import-file-input" accept=".mcb,.json" class="form-input-file">
+        </div>
+        <div class="form-group">
+          <label for="import-pass" class="form-label">Phrase de passe de déchiffrement :</label>
+          <input type="password" id="import-pass" class="form-input" placeholder="Entrez la phrase secrète...">
+        </div>
+        <div id="import-error-msg" class="crypto-error"></div>
+        <div id="import-result-msg" class="crypto-success" style="display:none;"></div>
+      </div>
+      <div class="modal-actions">
+        <button id="btn-do-import" class="btn-primary" type="button">🔓 Déchiffrer et Fusionner</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale Avertissement Premier Lancement -->
+  <div id="modal-avertissement-securite" class="modal-backdrop hidden">
+    <div class="modal-card modal-avertissement-card">
+      <div class="modal-header">
+        <h2>Bienvenue sur MesChampis</h2>
+        <button class="btn-modal-close" type="button" aria-label="Fermer (Échap)" title="Fermer (Échap)">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="safety-banner-big">
+          <div class="safety-big-icon">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+          </div>
+          <div class="safety-big-text">
+            <strong>Règles de sécurité et législation forestière</strong>
+            <p>MesChampis est un outil d'analyse écologique du territoire (relief, lisières, forêts, couvert arboré LiDAR).</p>
+          </div>
+        </div>
+        <ul class="safety-list">
+          <li><strong>Non-identification :</strong> MesChampis ne sert PAS à identifier les champignons. Ne consommez JAMAIS une récolte sans vérification auprès d'un pharmacien ou d'un mycologue qualifié.</li>
+          <li><strong>Confidentialité totale :</strong> Vos coins et vos cueillettes restent 100% sur votre appareil dans ce navigateur. Aucun envoi sur un serveur.</li>
+          <li><strong>Législation :</strong> Respectez la propriété privée (forêts privées soumises à autorisation du propriétaire) et les arrêtés préfectoraux/communaux régissant le ramassage.</li>
+        </ul>
+      </div>
+      <div class="modal-actions">
+        <button id="btn-compris-securite" class="btn-primary full-width" type="button">J'ai compris et j'accepte</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale Information Mode Installé (PWA Standalone) -->
+  <div id="modal-standalone-info" class="modal-backdrop hidden">
+    <div class="modal-card modal-avertissement-card">
+      <div class="modal-header">
+        <h2>Protégez vos données sur cet appareil</h2>
+        <button id="btn-close-standalone-info" class="btn-modal-close" type="button" aria-label="Fermer (Échap)" title="Fermer (Échap)">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="safety-banner-big" style="background: rgba(212, 122, 56, 0.12); border-color: rgba(212, 122, 56, 0.35);">
+          <div class="safety-big-icon">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 15h-2v-6h2zm0-8h-2V7h2z"></path>
+            </svg>
+          </div>
+          <div class="safety-big-text">
+            <strong style="color: var(--primary-light);">Précautions liées aux navigateurs mobiles</strong>
+            <p>Certains navigateurs peuvent effacer le cache local après une inactivité prolongée. L'installation sur l'écran d'accueil offre une persistance accrue.</p>
+          </div>
+        </div>
+        <div style="font-size:0.9rem; margin-top:1rem; line-height:1.5;">
+          <p><strong>Comment installer MesChampis :</strong></p>
+          <ul style="padding-left:1.2rem; margin:0.5rem 0;">
+            <li><strong>Sur iPhone / iPad :</strong> Touchez Partager <span style="font-size:1.1rem;">⎋</span> puis <strong>« Sur l'écran d'accueil »</strong>.</li>
+            <li><strong>Sur Mac (Safari) :</strong> Menu Fichier → <strong>« Ajouter au Dock… »</strong>.</li>
+            <li><strong>Sur Android / Chrome :</strong> Menu <span style="font-size:1.1rem;">⋮</span> → <strong>« Installer l'application »</strong>.</li>
+          </ul>
+          <p style="margin-top:0.75rem; background:rgba(0,0,0,0.25); padding:8px 10px; border-radius:6px; border-left:3px solid var(--primary);">
+            <strong>Conseil de cueilleur :</strong> Pensez à exporter régulièrement votre sauvegarde (.mcb) chiffrée pour conserver l'historique complet de vos saisons.
+          </p>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button id="btn-compris-standalone" class="btn-primary full-width" type="button">J'ai compris</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale Authentification (Inscription & Connexion) -->
+  <div id="modal-auth" class="modal-backdrop hidden">
+    <div class="modal-card modal-auth-card">
+      <div class="modal-header">
+        <h2 id="auth-title">Connexion à MesChampis</h2>
+        <button class="btn-modal-close btn-close-compte-modal" type="button" aria-label="Fermer (Échap)" title="Fermer (Échap)">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="auth-error-msg" class="crypto-error"></div>
+
+        <!-- Formulaire Inscription -->
+        <div id="form-inscription" class="auth-subform hidden">
+          <div class="form-group">
+            <label for="inscription-email" class="form-label">Adresse e-mail :</label>
+            <input type="email" id="inscription-email" class="form-input" placeholder="cueilleur@domaine.fr" autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label for="inscription-pass-1" class="form-label">Mot de passe :</label>
+            <input type="password" id="inscription-pass-1" class="form-input" placeholder="Votre mot de passe" autocomplete="new-password">
+          </div>
+          <div class="form-group">
+            <label for="inscription-pass-2" class="form-label">Confirmer le mot de passe :</label>
+            <input type="password" id="inscription-pass-2" class="form-input" placeholder="Confirmez votre mot de passe" autocomplete="new-password">
+          </div>
+          <div class="form-actions-stack">
+            <button id="btn-submit-inscription" class="btn-primary full-width" type="button">Continuer vers le code de secours ➔</button>
+            <button id="btn-switch-vers-connexion" class="btn-link" type="button">Déjà un compte ? Se connecter</button>
+          </div>
+        </div>
+
+        <!-- Formulaire Connexion -->
+        <div id="form-connexion" class="auth-subform">
+          <div class="form-group">
+            <label for="connexion-email" class="form-label">Adresse e-mail :</label>
+            <input type="email" id="connexion-email" class="form-input" placeholder="cueilleur@domaine.fr" autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label for="connexion-pass" class="form-label">Mot de passe :</label>
+            <input type="password" id="connexion-pass" class="form-input" placeholder="••••••••••••" autocomplete="current-password">
+          </div>
+          <div style="text-align: right; margin-bottom: 1rem;">
+            <button id="btn-vers-mdp-oublie" class="btn-link-sm" type="button">Mot de passe oublié ?</button>
+          </div>
+          <div class="form-actions-stack">
+            <button id="btn-submit-connexion" class="btn-primary full-width" type="button">Se connecter</button>
+            <button id="btn-switch-vers-inscription" class="btn-link" type="button">Nouveau ici ? Créer un compte</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale Code de Secours -->
+  <div id="modal-code-secours" class="modal-backdrop hidden">
+    <div class="modal-card modal-secours-card">
+      <div class="modal-header">
+        <h2>Votre Code de Secours Unique</h2>
+        <button class="btn-modal-close btn-close-compte-modal" type="button" aria-label="Fermer (Échap)" title="Fermer (Échap)">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="crypto-warning-box">
+          <strong>INDISPENSABLE :</strong> En cas de perte de votre mot de passe, ce code de secours est <strong>la SEULE façon</strong> de récupérer vos coins à champignons.
+        </div>
+        <p class="secours-instructions">
+          Notez ce code sur un papier ou conservez-le dans un gestionnaire de mots de passe sécurisé :
+        </p>
+        <div id="code-secours-display" class="code-secours-display-box" aria-label="Code de secours"></div>
+        <div style="text-align: center; margin-bottom: 1.25rem;">
+          <button id="btn-copier-code-secours" class="btn-secondary btn-sm" type="button">Copier le code</button>
+        </div>
+        <div class="form-group confirmation-secours-group">
+          <label id="label-confirmer-groupe" for="input-confirmer-groupe" class="form-label">
+            Pour confirmer, retapez le 3e groupe de 4 caractères :
+          </label>
+          <input type="text" id="input-confirmer-groupe" class="form-input text-center text-uppercase" maxlength="4" placeholder="XXXX">
+        </div>
+        <div id="code-secours-error" class="crypto-error"></div>
+      </div>
+      <div class="modal-actions">
+        <button id="btn-confirmer-code-secours" class="btn-primary full-width" type="button">J'ai bien noté mon code de secours</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale Avertissement Sanitaire & Mycologique Obligatoire -->
+  <div id="modal-avertissement-sanitaire" class="modal-backdrop hidden">
+    <div class="modal-card modal-sanitaire-card">
+      <div class="modal-header">
+        <h2>Avertissement Sanitaire Obligatoire</h2>
+        <button class="btn-modal-close btn-close-compte-modal" type="button" aria-label="Fermer (Échap)" title="Fermer (Échap)">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="sanitaire-alert-box">
+          <p><strong>Mise en garde cruciale pour votre sécurité :</strong></p>
+          <p>MesChampis est un outil d'aide à la cartographie forestière et à l'analyse écologique des biotopes favorables. <strong>Il ne constitue en aucun cas un guide d'identification des espèces.</strong></p>
+          <ul class="sanitaire-list">
+            <li>Ne consommez <strong>JAMAIS</strong> un champignon sans identification formelle préalable auprès d'un pharmacien ou d'une société mycologique agréée.</li>
+            <li>Une photo ou une description dans une application ne suffit jamais à certifier la comestibilité.</li>
+            <li>En cas de doute, d'ingestion suspecte ou de premiers symptômes (troubles digestifs, sueurs, vertiges), contactez immédiatement le <strong>Centre Antipoison (15 ou 112)</strong>.</li>
+            <li>Respectez scrupuleusement la propriété privée, la faune sauvage et la réglementation locale relative aux prélèvements en forêt.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button id="btn-accepter-avertissement-sanitaire" class="btn-primary full-width" type="button">
+          J'ai lu, compris et j'accepte cet avertissement
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale Mot de passe oublié (3 cas) -->
+  <div id="modal-mdp-oublie" class="modal-backdrop hidden">
+    <div class="modal-card modal-mdp-oublie-card">
+      <div class="modal-header">
+        <h2>Récupération de compte</h2>
+        <button class="btn-modal-close btn-close-compte-modal" type="button" aria-label="Fermer (Échap)" title="Fermer (Échap)">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="mdp-oublie-error" class="crypto-error"></div>
+        <div id="mdp-oublie-success" class="crypto-success"></div>
+
+        <!-- Cas (a) : clé en mémoire locale sur cet appareil -->
+        <div id="bloc-mdp-cas-a" class="cas-recup-box hidden">
+          <div class="cas-badge badge-green">Appareil vérifié</div>
+          <p>Votre clé maître est présente en mémoire sur cet appareil. Vous pouvez redéfinir directement votre mot de passe :</p>
+        </div>
+
+        <!-- Cas (b) : saisie du code de secours -->
+        <div id="bloc-mdp-cas-b" class="cas-recup-box hidden">
+          <div class="cas-badge badge-blue">Code de secours</div>
+          <div class="form-group">
+            <label for="recup-code-secours" class="form-label">Saisissez votre code de secours (format XXXX-XXXX-...) :</label>
+            <input type="text" id="recup-code-secours" class="form-input text-uppercase" placeholder="7D4F-9K2M-P8X3-N5R6-W4Y7-2B9C">
+          </div>
+        </div>
+
+        <!-- Cas (c) : information en cas de perte totale -->
+        <div id="bloc-mdp-cas-c" class="cas-recup-box-c hidden">
+          <div class="crypto-warning-box">
+            <strong>Sans code de secours :</strong> Le chiffrement de bout en bout rend toute récupération mathématiquement impossible. Le serveur ne peut pas vous renvoyer votre clé.
+          </div>
+        </div>
+
+        <!-- Nouveaux mots de passe -->
+        <div class="form-group" style="margin-top: 1rem;">
+          <label for="recup-nouveau-mdp" class="form-label">Nouveau mot de passe :</label>
+          <input type="password" id="recup-nouveau-mdp" class="form-input" placeholder="Votre nouveau mot de passe">
+        </div>
+        <div class="form-group">
+          <label for="recup-confirm-mdp" class="form-label">Confirmer le nouveau mot de passe :</label>
+          <input type="password" id="recup-confirm-mdp" class="form-input" placeholder="Confirmez le mot de passe">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button id="btn-submit-mdp-oublie" class="btn-primary full-width" type="button">Réinitialiser et Déverrouiller</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale Offres & Abonnement (Fin d'essai) -->
+  <div id="modal-offres-abonnement" class="modal-backdrop hidden">
+    <div class="modal-card modal-offres-card">
+      <div class="modal-header">
+        <h2>Recommandations Écologiques & Cartes de Chaleur</h2>
+        <button class="btn-modal-close btn-close-compte-modal" type="button" aria-label="Fermer (Échap)" title="Fermer (Échap)">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="offres-intro">
+          Visualisez les zones forestières les plus favorables du Puy-de-Dôme grâce à l'analyse fine LiDAR HD et BD Forêt.
+        </p>
+
+        <!-- Essai gratuit de 7 jours (si non utilisé) -->
+        <div id="bloc-essai-7j" class="bloc-essai-box">
+          <div class="essai-badge">7 jours offerts</div>
+          <h3>Essai gratuit sans engagement</h3>
+          <p>Testez toutes les fonctionnalités premium (cartes de chaleur, météo locale) pendant 7 jours.</p>
+          <button id="btn-demarrer-essai-7j" class="btn-primary btn-large full-width" type="button">
+            Démarrer mon essai gratuit de 7 jours
+          </button>
+        </div>
+
+        <div class="offres-separator">
+          <span>OU CHOISISSEZ UNE FORMULE</span>
+        </div>
+
+        <div class="offres-grid">
+          <!-- Pass Saison -->
+          <div class="offre-card">
+            <div class="offre-badge">Saison Automne</div>
+            <h4>Pass Saison</h4>
+            <div class="offre-price">29 € <span>TTC</span></div>
+            <p class="offre-desc">Accès complet jusqu'à la fin de la saison mycologique en cours.</p>
+            <ul class="offre-points">
+              <li>✓ Carte de chaleur départementale</li>
+              <li>✓ Sauvegarde chiffrée illimitée</li>
+              <li>✓ Météo et biotopes forestiers</li>
+            </ul>
+            <button id="btn-souscrire-pass-saison" class="btn-secondary full-width" type="button">Choisir le Pass Saison</button>
+          </div>
+
+          <!-- Annuel -->
+          <div class="offre-card offre-card-featured">
+            <div class="offre-badge badge-popular">Recommandé</div>
+            <h4>Abonnement Annuel</h4>
+            <div class="offre-price">49 € <span>/ an</span></div>
+            <p class="offre-desc">Toutes les saisons : morilles de printemps et bolets d'automne.</p>
+            <ul class="offre-points">
+              <li>✓ Toutes saisons (12 mois)</li>
+              <li>✓ Carte de chaleur temps réel</li>
+              <li>✓ Support prioritaire</li>
+            </ul>
+            <button id="btn-souscrire-annuel" class="btn-primary full-width" type="button">Choisir l'Annuel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale Paiement factice Stripe -->
+  <div id="modal-paiement-stripe" class="modal-backdrop hidden">
+    <div class="modal-card modal-stripe-card">
+      <div class="stripe-top-bar">
+        <div class="stripe-logo"><strong>Stripe</strong> <span class="stripe-mode-badge">Simulation Test</span></div>
+        <button class="btn-modal-close btn-close-compte-modal" type="button" aria-label="Fermer (Échap)" title="Fermer (Échap)">✕</button>
+      </div>
+      <div class="modal-body stripe-body">
+        <div class="stripe-recap">
+          <div style="font-size:0.85rem; color: #64748b;">MesChampis SARL</div>
+          <h3 id="stripe-recap-titre" style="margin: 0.25rem 0; font-size:1.25rem; color:#0f172a;">Pass Saison Automne 2026</h3>
+          <div id="stripe-recap-prix" style="font-size:1.8rem; font-weight:800; color:#0f172a;">29,00 €</div>
+        </div>
+
+        <div class="stripe-form">
+          <div class="form-group">
+            <label class="form-label" style="color:#334155;">Informations de carte bancaire</label>
+            <div class="stripe-fake-input">
+              <span class="stripe-card-icon">💳</span>
+              <input type="text" class="form-input stripe-input" value="4242 •••• •••• 4242" readonly>
+            </div>
+          </div>
+          <div style="display:flex; gap:0.5rem;">
+            <input type="text" class="form-input stripe-input" value="12 / 28" readonly style="flex:1;">
+            <input type="text" class="form-input stripe-input" value="123" readonly style="width:80px;">
+          </div>
+
+          <div id="stripe-payment-error" class="crypto-error" style="margin-top:0.75rem;"></div>
+
+          <div class="stripe-buttons-stack" style="margin-top:1.25rem; display:flex; flex-direction:column; gap:0.75rem;">
+            <button id="btn-pay-stripe-success" class="btn-stripe-pay" type="button">
+              Régler la commande
+            </button>
+            <button id="btn-pay-stripe-fail" class="btn-stripe-fail" type="button">
+              Simuler un refus de carte
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale Réglages Compte -->
+  <div id="modal-reglages-compte" class="modal-backdrop hidden">
+    <div class="modal-card modal-reglages-card">
+      <div class="modal-header">
+        <h2>Mon Compte & Paramètres</h2>
+        <button class="btn-modal-close btn-close-compte-modal" type="button" aria-label="Fermer (Échap)" title="Fermer (Échap)">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="reglages-item">
+          <div class="reglages-item-label">Adresse e-mail :</div>
+          <div id="reglages-email-val" class="reglages-item-val">demo@meschampis.fr</div>
+        </div>
+        <div class="reglages-item">
+          <div class="reglages-item-label">Statut abonnement :</div>
+          <div id="reglages-statut-abonnement" class="reglages-item-val">Compte gratuit</div>
+        </div>
+
+        <div class="reglages-actions-list">
+          <button id="btn-reglages-abonnement" class="btn-reglages-action" type="button">
+            Gérer mon abonnement / Débloquer le Premium
+          </button>
+          <button id="btn-reglages-deconnexion" class="btn-reglages-action" type="button">
+            Se déconnecter
+          </button>
+          <button id="btn-reglages-supprimer-compte" class="btn-reglages-action text-danger" type="button">
+            Supprimer définitivement mon compte
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale Milieux Favorables (Factice Étape 4 bis) -->
+  <div id="modal-milieux-favorables" class="modal-backdrop hidden">
+    <div class="modal-card modal-milieux-card">
+      <div class="modal-header">
+        <h2>Milieux Favorables (Données Naturalistes)</h2>
+        <button class="btn-modal-close btn-close-compte-modal" type="button" aria-label="Fermer (Échap)" title="Fermer (Échap)">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="milieux-art-badge">
+          <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.6">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path>
+            <path d="M2 12h20"></path>
+          </svg>
+        </div>
+        <h3>Bientôt disponible — Étape 4 bis</h3>
+        <p>
+          Pour les cueilleurs démarrant sans coin connu, MesChampis intégrera les données naturalistes publiques ouvertes (OpenObs, GBIF sous licences CC0 / CC BY).
+        </p>
+        <p style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; border-left:3px solid var(--primary); font-size:0.85rem; margin-top:0.75rem;">
+          <strong>Règle de protection stricte :</strong> Ces données ne seront <em>jamais</em> affichées sous forme de points précis, mais uniquement sous forme d'enveloppes de milieux favorables départementaux pour préserver la quiétude des sites.
+        </p>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-primary full-width btn-close-compte-modal" type="button">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast notification -->
+  <div id="carnet-toast" class="carnet-toast hidden"></div>
+
+  <!-- Script ES Module principal -->
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
