@@ -37,7 +37,7 @@
           </svg>
           <span class="hero-meta-badge">Massif du Puy-de-Dôme • Grille Raster 25 m</span>
         </div>
-        <button id="btn-fermer-hero" class="btn-modal-close btn-hero-close" type="button" aria-label="Fermer l'accueil (Échap)" title="Fermer l'accueil (Échap)">✕</button>
+        <button id="btn-fermer-hero" class="btn-modal-close btn-hero-close" type="button" aria-label="Fermer l'accueil (Échap)" title="Fermer l'accueil (Échap)">&times;</button>
       </div>
       <h2 class="hero-title">Herbier Forestier & Carnet de Cueillette Confidentiel</h2>
       <p class="hero-subtitle">
@@ -232,36 +232,76 @@
   <aside id="side-panel" class="side-panel">
     <div class="panel-header">
       <h2>Grille écologique (25 m)</h2>
-      <button id="btn-close-panel" class="btn-close mobile-only" aria-label="Fermer" title="Fermer">✕</button>
+      <button id="btn-close-panel" class="btn-close mobile-only" aria-label="Fermer" title="Fermer">&times;</button>
     </div>
 
     <!-- Sélecteur de couche de grille (Colorier par) -->
     <div class="panel-section">
       <span class="control-label">Indicateur cartographique :</span>
-      <div class="coloration-tabs grid-tabs-5" role="tablist">
+      <div class="coloration-tabs grid-tabs-indicators" role="tablist">
         <button class="btn-color-tab active" data-mode="expo" id="tab-mode-expo" title="Exposition solaire">
-          <span class="tab-glyph">🧭</span> Expo
+          <svg class="tab-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/>
+            <polygon points="12 6 15 12 12 10 9 12 12 6" fill="currentColor"/>
+          </svg>
+          <span class="tab-label-text">Exposition</span>
         </button>
         <button class="btn-color-tab" data-mode="alt" id="tab-mode-alt" title="Altitude en mètres">
-          <span class="tab-glyph">⛰</span> Alt
+          <svg class="tab-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m3 19 6-10 4 6 3-4 5 8H3z"/>
+          </svg>
+          <span class="tab-label-text">Altitude</span>
         </button>
         <button class="btn-color-tab" data-mode="pente" id="tab-mode-pente" title="Pente en degrés">
-          <span class="tab-glyph">∠</span> Pente
+          <svg class="tab-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19h16L4 5v14z"/>
+            <path d="M12 19a8 8 0 0 0-4-2"/>
+          </svg>
+          <span class="tab-label-text">Pente</span>
         </button>
         <button class="btn-color-tab" data-mode="lisiere" id="tab-mode-lisiere" title="Distance à la lisière">
-          <span class="tab-glyph">⸙</span> Lisière
+          <svg class="tab-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 4 3 11h3l-2 5h8l-2-5h3L8 4z"/>
+            <line x1="8" y1="16" x2="8" y2="21"/>
+            <line x1="16" y1="4" x2="16" y2="21"/>
+            <line x1="16" y1="10" x2="21" y2="10"/>
+          </svg>
+          <span class="tab-label-text">Lisières</span>
         </button>
         <button class="btn-color-tab" data-mode="essence" id="tab-mode-essence" title="Essence forestière BD Forêt">
-          <span class="tab-glyph">↟</span> Essence
+          <svg class="tab-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2 7 9h3l-4 6h6v5h2v-5h6l-4-6h3L12 2z"/>
+          </svg>
+          <span class="tab-label-text">Essences</span>
         </button>
         <button class="btn-color-tab" data-mode="couvert" id="tab-mode-couvert" title="Couvert arboré LiDAR HD (%)">
-          <span class="tab-glyph">☁</span> Couvert
+          <svg class="tab-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="8" r="5"/>
+            <circle cx="7" cy="14" r="4"/>
+            <circle cx="17" cy="14" r="4"/>
+            <line x1="12" y1="13" x2="12" y2="21"/>
+          </svg>
+          <span class="tab-label-text">Couvert</span>
         </button>
         <button class="btn-color-tab" data-mode="hauteur" id="tab-mode-hauteur" title="Hauteur de canopée (m)">
-          <span class="tab-glyph">↕</span> Hauteur
+          <svg class="tab-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3v18"/>
+            <polyline points="8 7 12 3 16 7"/>
+            <polyline points="8 17 12 21 16 17"/>
+          </svg>
+          <span class="tab-label-text">Hauteur</span>
         </button>
         <button class="btn-color-tab btn-chaleur-tab" data-mode="chaleur" id="tab-mode-chaleur" title="Carte de chaleur écologique (Recommandations)">
-          <span class="tab-glyph">◈</span> Recommandations
+          <svg class="tab-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/>
+            <circle cx="12" cy="12" r="5"/>
+            <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+            <line x1="12" y1="3" x2="12" y2="6"/>
+            <line x1="12" y1="18" x2="12" y2="21"/>
+            <line x1="3" y1="12" x2="6" y2="12"/>
+            <line x1="18" y1="12" x2="21" y2="12"/>
+          </svg>
+          <span class="tab-label-text">Recommandations</span>
         </button>
       </div>
     </div>
@@ -316,13 +356,21 @@
   <!-- Bandeau d'instruction Mode Positionnement Manuel sur la carte -->
   <div id="bandeau-positionnement-carte" class="bandeau-positionnement hidden">
     <div class="bandeau-positionnement-content">
-      <span class="positionnement-icon">🎯</span>
+      <span class="positionnement-icon">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="8"/>
+          <line x1="12" y1="2" x2="12" y2="6"/>
+          <line x1="12" y1="18" x2="12" y2="22"/>
+          <line x1="2" y1="12" x2="6" y2="12"/>
+          <line x1="18" y1="12" x2="22" y2="12"/>
+        </svg>
+      </span>
       <div class="positionnement-text">
-        <strong>Pointez votre trouvaille sur la carte</strong>
+        <strong>Pointer votre observation sur la carte</strong>
         <span class="positionnement-sub">Cliquez à l'endroit précis où vous l'avez observée</span>
       </div>
       <button id="btn-annuler-positionnement" class="btn-annuler-positionnement" type="button" title="Annuler le positionnement">
-        ✕ Annuler <span class="shortcut-hint">(Échap)</span>
+        Annuler <span class="shortcut-hint">(Échap)</span>
       </button>
     </div>
   </div>
@@ -331,35 +379,53 @@
   <div class="fab-container">
     <div id="fab-menu" class="fab-menu hidden">
       <button id="fab-opt-carte" class="fab-option-btn fab-opt-principal" type="button">
-        <span class="fab-opt-icon">🎯</span>
+        <span class="fab-opt-icon">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="8"/>
+            <line x1="12" y1="2" x2="12" y2="6"/>
+            <line x1="12" y1="18" x2="12" y2="22"/>
+            <line x1="2" y1="12" x2="6" y2="12"/>
+            <line x1="18" y1="12" x2="22" y2="12"/>
+          </svg>
+        </span>
         <div class="fab-opt-text-block">
-          <span class="fab-opt-label">Poser sur la carte</span>
+          <span class="fab-opt-label">Pointer sur la carte</span>
           <span class="fab-opt-desc">Cibler un point précis au curseur</span>
         </div>
       </button>
       <button id="fab-opt-gps" class="fab-option-btn" type="button">
         <span class="fab-opt-icon">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"></path>
             <circle cx="12" cy="10" r="3"></circle>
           </svg>
         </span>
         <div class="fab-opt-text-block">
           <span class="fab-opt-label">Ma position GPS</span>
-          <span class="fab-opt-desc">Positionnement automatique en direct</span>
+          <span class="fab-opt-desc">Pointage automatique en direct</span>
         </div>
       </button>
       <button id="fab-opt-rien" class="fab-option-btn fab-opt-rien" type="button">
-        <span class="fab-opt-icon">🍃</span>
+        <span class="fab-opt-icon">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/>
+            <line x1="6" y1="18" x2="18" y2="6"/>
+          </svg>
+        </span>
         <div class="fab-opt-text-block">
-          <span class="fab-opt-label">Rien trouvé ici</span>
-          <span class="fab-opt-desc">Noter une absence pour l'analyse</span>
+          <span class="fab-opt-label">Noter une absence</span>
+          <span class="fab-opt-desc">Consigner une zone sans trouvaille</span>
         </div>
       </button>
     </div>
-    <button id="btn-fab-carnet" class="fab-main-btn" title="Ajouter une trouvaille" type="button">
-      <span class="fab-plus-icon">+</span>
-      <span class="fab-text">Trouvaille</span>
+    <button id="btn-fab-carnet" class="fab-main-btn" title="Nouveau relevé" type="button">
+      <span class="fab-plus-icon">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+      </span>
+      <span class="fab-text">Nouveau relevé</span>
     </button>
   </div>
 
@@ -388,14 +454,26 @@
   <div id="modal-carnet-form" class="modal-backdrop hidden">
     <div class="modal-card modal-form-card">
       <div class="modal-header">
-        <h2 id="form-carnet-title">Ajouter une trouvaille</h2>
-        <button id="btn-close-form-modal" class="btn-modal-close" type="button" aria-label="Fermer">✕</button>
+        <h2 id="form-carnet-title">Ajouter un relevé de terrain</h2>
+        <button id="btn-close-form-modal" class="btn-modal-close" type="button" aria-label="Fermer">&times;</button>
       </div>
 
       <!-- Bascule Trouvé / Rien -->
       <div class="type-toggle-bar">
-        <button id="btn-type-trouve" class="btn-type-toggle active" type="button">🍄 Trouvé</button>
-        <button id="btn-type-rien" class="btn-type-toggle" type="button">🍃 Rien trouvé ici</button>
+        <button id="btn-type-trouve" class="btn-type-toggle active" type="button">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px; margin-right:6px;">
+            <path d="M12 2C6.5 2 2 6.5 2 12c0 .6.4 1 1 1h18c.6 0 1-.4 1-1 0-5.5-4.5-10-10-10z"/>
+            <path d="M10 13v7a2 2 0 0 0 4 0v-7"/>
+          </svg>
+          Trouvaille (présence)
+        </button>
+        <button id="btn-type-rien" class="btn-type-toggle" type="button">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px; margin-right:6px;">
+            <circle cx="12" cy="12" r="9"/>
+            <line x1="6" y1="18" x2="18" y2="6"/>
+          </svg>
+          Absence constatée
+        </button>
       </div>
 
       <div class="modal-body form-body-scrollable">
@@ -457,12 +535,22 @@
         <!-- Position et analyse écologique automatique 25 m -->
         <div class="form-group form-eco-box">
           <div class="form-coords-header">
-            <span class="form-label">🌱 Milieu & essences <span class="badge-eco-auto">Auto 25 m</span></span>
+            <span class="form-label">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px; margin-right:4px;">
+                <path d="M12 2 7 9h3l-4 6h6v5h2v-5h6l-4-6h3L12 2z"/>
+              </svg>
+              Milieu & essences <span class="badge-eco-auto">Auto 25 m</span>
+            </span>
             <span id="carnet-form-coords" class="form-coords-val">—</span>
           </div>
           <div id="cell-preview-box" class="cell-preview-box">
             <div id="cell-hors-grille-warning" class="cell-warning hidden">
-              ⚠️ Point situé hors de la grille raster 25 m couverte.
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px; margin-right:4px;">
+                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              Point situé hors de la grille raster 25 m couverte.
             </div>
             <div class="cell-mini-grid">
               <div class="cell-mini-stat"><span class="lbl">Essence (BD Forêt)</span><span id="preview-cell-essence" class="val">—</span></div>
@@ -476,7 +564,9 @@
 
         <!-- Avertissement légal et sanitaire obligatoire en pied -->
         <div class="form-safety-footer">
-          <p class="safety-p">⚠️ <strong>Avertissement :</strong> MesChampis ne sert pas à identifier les champignons. Ne consommez jamais une récolte sans vérification par un pharmacien ou un mycologue.</p>
+          <p class="safety-p">
+            <strong>Avertissement :</strong> MesChampis ne sert pas à identifier les champignons. Ne consommez jamais une récolte sans vérification par un pharmacien ou un mycologue.
+          </p>
           <p class="safety-sub">Respectez la propriété privée et les arrêtés locaux de cueillette.</p>
         </div>
       </div>
@@ -493,10 +583,16 @@
     <div class="modal-card modal-carnet-card">
       <div class="modal-header">
         <div class="modal-title-with-badge">
-          <h2>Mon carnet de cueillette</h2>
-          <span class="privacy-badge">🔒 100% Hors-ligne</span>
+          <h2>Mon carnet de terrain</h2>
+          <span class="privacy-badge">
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:4px;">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            100% Hors-ligne chiffré
+          </span>
         </div>
-        <button id="btn-close-mon-carnet" class="btn-modal-close" type="button" aria-label="Fermer">✕</button>
+        <button id="btn-close-mon-carnet" class="btn-modal-close" type="button" aria-label="Fermer">&times;</button>
       </div>
 
       <!-- Compteurs -->
@@ -511,17 +607,17 @@
         </div>
         <div class="carnet-stat-card">
           <span id="stat-carnet-rien" class="cstat-num">0</span>
-          <span class="cstat-label">« Rien trouvé »</span>
+          <span class="cstat-label">Zones sans trouvaille</span>
         </div>
       </div>
 
       <!-- Barre de filtres -->
       <div class="carnet-filters-bar">
-        <input type="text" id="carnet-filtre-recherche" class="filter-input-search" placeholder="🔍 Rechercher espèce, note...">
+        <input type="text" id="carnet-filtre-recherche" class="filter-input-search" placeholder="Rechercher espèce, note...">
         <select id="carnet-filtre-type" class="filter-select">
-          <option value="tous">Tous les types</option>
-          <option value="trouve">🍄 Trouvé</option>
-          <option value="rien">🍃 Rien trouvé</option>
+          <option value="tous">Tous les relevés</option>
+          <option value="trouve">Observations (trouvailles)</option>
+          <option value="rien">Zones sans trouvaille</option>
         </select>
         <select id="carnet-filtre-annee" class="filter-select">
           <option value="toutes">Toutes les années</option>
@@ -540,8 +636,22 @@
           <div class="storage-date">Dernier export : <span id="stat-stockage-export">Jamais</span></div>
         </div>
         <div class="storage-btns">
-          <button id="btn-open-export" class="btn-storage" type="button">💾 Sauvegarder (.mcb)</button>
-          <button id="btn-open-import" class="btn-storage" type="button">📥 Restaurer (.mcb)</button>
+          <button id="btn-open-export" class="btn-storage" type="button">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+              <polyline points="17 21 17 13 7 13 7 21"/>
+              <polyline points="7 3 7 8 15 8"/>
+            </svg>
+            Sauvegarder (.mcb)
+          </button>
+          <button id="btn-open-import" class="btn-storage" type="button">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Restaurer (.mcb)
+          </button>
         </div>
       </div>
     </div>
@@ -552,14 +662,14 @@
     <div class="modal-card modal-crypto-card">
       <div class="modal-header">
         <h2>Sauvegarde chiffrée (.mcb)</h2>
-        <button id="btn-close-export" class="btn-modal-close" type="button" aria-label="Fermer">✕</button>
+        <button id="btn-close-export" class="btn-modal-close" type="button" aria-label="Fermer">&times;</button>
       </div>
       <div class="modal-body">
         <p class="crypto-intro">
           Vos données sont chiffrées sur votre appareil avec l'algorithme <strong>AES-GCM 256 bits</strong> dérivé par <strong>PBKDF2</strong> (250 000 itérations).
         </p>
         <div class="crypto-warning-box">
-          ⚠️ <strong>Attention :</strong> Ce mot de passe sera demandé pour restaurer votre sauvegarde. Notez-le simplement.
+          <strong>Attention :</strong> Ce mot de passe sera demandé pour restaurer votre sauvegarde. Notez-le soigneusement.
         </div>
         <div class="form-group">
           <label for="export-pass-1" class="form-label">Phrase ou mot de passe :</label>
@@ -572,7 +682,13 @@
         <div id="export-error-msg" class="crypto-error"></div>
       </div>
       <div class="modal-actions" style="display: flex; flex-direction: column; gap: 0.75rem;">
-        <button id="btn-do-export" class="btn-primary" type="button">🔐 Chiffrer et Exporter</button>
+        <button id="btn-do-export" class="btn-primary" type="button">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px; margin-right:6px;">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          Chiffrer et Exporter
+        </button>
         <p class="crypto-hint" style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; text-align: center; margin: 0;">
           Enregistrez la sauvegarde hors du téléphone (iCloud Drive, Google Drive, e-mail à vous-même) : si le téléphone est perdu, elle seule permet de tout récupérer.
         </p>
@@ -585,7 +701,7 @@
     <div class="modal-card modal-crypto-card">
       <div class="modal-header">
         <h2>Restaurer une sauvegarde (.mcb)</h2>
-        <button id="btn-close-import" class="btn-modal-close" type="button" aria-label="Fermer">✕</button>
+        <button id="btn-close-import" class="btn-modal-close" type="button" aria-label="Fermer">&times;</button>
       </div>
       <div class="modal-body">
         <div class="form-group">
@@ -600,7 +716,13 @@
         <div id="import-result-msg" class="crypto-success" style="display:none;"></div>
       </div>
       <div class="modal-actions">
-        <button id="btn-do-import" class="btn-primary" type="button">🔓 Déchiffrer et Fusionner</button>
+        <button id="btn-do-import" class="btn-primary" type="button">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px; margin-right:6px;">
+            <path d="M7 11V7a5 5 0 0 1 9.9-1"/>
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+          </svg>
+          Déchiffrer et Fusionner
+        </button>
       </div>
     </div>
   </div>
@@ -610,7 +732,7 @@
     <div class="modal-card modal-avertissement-card">
       <div class="modal-header">
         <h2>Bienvenue sur MesChampis</h2>
-        <button class="btn-modal-close" type="button" aria-label="Fermer (Échap)" title="Fermer (Échap)">✕</button>
+        <button class="btn-modal-close" type="button" aria-label="Fermer (Échap)" title="Fermer (Échap)">&times;</button>
       </div>
       <div class="modal-body">
         <div class="safety-banner-big">
@@ -643,7 +765,7 @@
     <div class="modal-card modal-avertissement-card">
       <div class="modal-header">
         <h2>Protégez vos données sur cet appareil</h2>
-        <button id="btn-close-standalone-info" class="btn-modal-close" type="button" aria-label="Fermer (Échap)" title="Fermer (Échap)">✕</button>
+        <button id="btn-close-standalone-info" class="btn-modal-close" type="button" aria-label="Fermer (Échap)" title="Fermer (Échap)">&times;</button>
       </div>
       <div class="modal-body">
         <div class="safety-banner-big" style="background: rgba(212, 122, 56, 0.12); border-color: rgba(212, 122, 56, 0.35);">
@@ -660,9 +782,9 @@
         <div style="font-size:0.9rem; margin-top:1rem; line-height:1.5;">
           <p><strong>Comment installer MesChampis :</strong></p>
           <ul style="padding-left:1.2rem; margin:0.5rem 0;">
-            <li><strong>Sur iPhone / iPad :</strong> Touchez Partager <span style="font-size:1.1rem;">⎋</span> puis <strong>« Sur l'écran d'accueil »</strong>.</li>
-            <li><strong>Sur Mac (Safari) :</strong> Menu Fichier → <strong>« Ajouter au Dock… »</strong>.</li>
-            <li><strong>Sur Android / Chrome :</strong> Menu <span style="font-size:1.1rem;">⋮</span> → <strong>« Installer l'application »</strong>.</li>
+            <li><strong>Sur iPhone / iPad :</strong> Touchez Partager <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block; vertical-align:middle;"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg> puis <strong>« Sur l'écran d'accueil »</strong>.</li>
+            <li><strong>Sur Mac (Safari) :</strong> Menu Fichier &rarr; <strong>« Ajouter au Dock… »</strong>.</li>
+            <li><strong>Sur Android / Chrome :</strong> Menu <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" style="display:inline-block; vertical-align:middle;"><circle cx="12" cy="5" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="12" cy="19" r="2"></circle></svg> &rarr; <strong>« Installer l'application »</strong>.</li>
           </ul>
           <p style="margin-top:0.75rem; background:rgba(0,0,0,0.25); padding:8px 10px; border-radius:6px; border-left:3px solid var(--primary);">
             <strong>Conseil de cueilleur :</strong> Pensez à exporter régulièrement votre sauvegarde (.mcb) chiffrée pour conserver l'historique complet de vos saisons.
@@ -680,7 +802,7 @@
     <div class="modal-card modal-auth-card">
       <div class="modal-header">
         <h2 id="auth-title">Connexion à MesChampis</h2>
-        <button class="btn-modal-close btn-close-compte-modal" type="button" aria-label="Fermer (Échap)" title="Fermer (Échap)">✕</button>
+        <button class="btn-modal-close btn-close-compte-modal" type="button" aria-label="Fermer (Échap)" title="Fermer (Échap)">&times;</button>
       </div>
       <div class="modal-body">
         <div id="auth-error-msg" class="crypto-error"></div>
@@ -700,7 +822,7 @@
             <input type="password" id="inscription-pass-2" class="form-input" placeholder="Confirmez votre mot de passe" autocomplete="new-password">
           </div>
           <div class="form-actions-stack">
-            <button id="btn-submit-inscription" class="btn-primary full-width" type="button">Continuer vers le code de secours ➔</button>
+            <button id="btn-submit-inscription" class="btn-primary full-width" type="button">Continuer vers le code de secours &rarr;</button>
             <button id="btn-switch-vers-connexion" class="btn-link" type="button">Déjà un compte ? Se connecter</button>
           </div>
         </div>
@@ -732,7 +854,7 @@
     <div class="modal-card modal-secours-card">
       <div class="modal-header">
         <h2>Votre Code de Secours Unique</h2>
-        <button class="btn-modal-close btn-close-compte-modal" type="button" aria-label="Fermer (Échap)" title="Fermer (Échap)">✕</button>
+        <button class="btn-modal-close btn-close-compte-modal" type="button" aria-label="Fermer (Échap)" title="Fermer (Échap)">&times;</button>
       </div>
       <div class="modal-body">
         <div class="crypto-warning-box">
@@ -764,7 +886,7 @@
     <div class="modal-card modal-sanitaire-card">
       <div class="modal-header">
         <h2>Avertissement Sanitaire Obligatoire</h2>
-        <button class="btn-modal-close btn-close-compte-modal" type="button" aria-label="Fermer (Échap)" title="Fermer (Échap)">✕</button>
+        <button class="btn-modal-close btn-close-compte-modal" type="button" aria-label="Fermer (Échap)" title="Fermer (Échap)">&times;</button>
       </div>
       <div class="modal-body">
         <div class="sanitaire-alert-box">
@@ -791,7 +913,7 @@
     <div class="modal-card modal-mdp-oublie-card">
       <div class="modal-header">
         <h2>Récupération de compte</h2>
-        <button class="btn-modal-close btn-close-compte-modal" type="button" aria-label="Fermer (Échap)" title="Fermer (Échap)">✕</button>
+        <button class="btn-modal-close btn-close-compte-modal" type="button" aria-label="Fermer (Échap)" title="Fermer (Échap)">&times;</button>
       </div>
       <div class="modal-body">
         <div id="mdp-oublie-error" class="crypto-error"></div>
@@ -840,7 +962,7 @@
     <div class="modal-card modal-offres-card">
       <div class="modal-header">
         <h2>Recommandations Écologiques & Cartes de Chaleur</h2>
-        <button class="btn-modal-close btn-close-compte-modal" type="button" aria-label="Fermer (Échap)" title="Fermer (Échap)">✕</button>
+        <button class="btn-modal-close btn-close-compte-modal" type="button" aria-label="Fermer (Échap)" title="Fermer (Échap)">&times;</button>
       </div>
       <div class="modal-body">
         <p class="offres-intro">
@@ -869,9 +991,9 @@
             <div class="offre-price">29 € <span>TTC</span></div>
             <p class="offre-desc">Accès complet jusqu'à la fin de la saison mycologique en cours.</p>
             <ul class="offre-points">
-              <li>✓ Carte de chaleur départementale</li>
-              <li>✓ Sauvegarde chiffrée illimitée</li>
-              <li>✓ Météo et biotopes forestiers</li>
+              <li><span class="offre-check-icon"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span> Carte de chaleur départementale</li>
+              <li><span class="offre-check-icon"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span> Sauvegarde chiffrée illimitée</li>
+              <li><span class="offre-check-icon"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span> Météo et biotopes forestiers</li>
             </ul>
             <button id="btn-souscrire-pass-saison" class="btn-secondary full-width" type="button">Choisir le Pass Saison</button>
           </div>
@@ -883,9 +1005,9 @@
             <div class="offre-price">49 € <span>/ an</span></div>
             <p class="offre-desc">Toutes les saisons : morilles de printemps et bolets d'automne.</p>
             <ul class="offre-points">
-              <li>✓ Toutes saisons (12 mois)</li>
-              <li>✓ Carte de chaleur temps réel</li>
-              <li>✓ Support prioritaire</li>
+              <li><span class="offre-check-icon"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span> Toutes saisons (12 mois)</li>
+              <li><span class="offre-check-icon"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span> Carte de chaleur temps réel</li>
+              <li><span class="offre-check-icon"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span> Support prioritaire</li>
             </ul>
             <button id="btn-souscrire-annuel" class="btn-primary full-width" type="button">Choisir l'Annuel</button>
           </div>
@@ -899,7 +1021,7 @@
     <div class="modal-card modal-stripe-card">
       <div class="stripe-top-bar">
         <div class="stripe-logo"><strong>Stripe</strong> <span class="stripe-mode-badge">Simulation Test</span></div>
-        <button class="btn-modal-close btn-close-compte-modal" type="button" aria-label="Fermer (Échap)" title="Fermer (Échap)">✕</button>
+        <button class="btn-modal-close btn-close-compte-modal" type="button" aria-label="Fermer (Échap)" title="Fermer (Échap)">&times;</button>
       </div>
       <div class="modal-body stripe-body">
         <div class="stripe-recap">
@@ -912,7 +1034,12 @@
           <div class="form-group">
             <label class="form-label" style="color:#334155;">Informations de carte bancaire</label>
             <div class="stripe-fake-input">
-              <span class="stripe-card-icon">💳</span>
+              <span class="stripe-card-icon">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="5" width="20" height="14" rx="2"/>
+                  <line x1="2" y1="10" x2="22" y2="10"/>
+                </svg>
+              </span>
               <input type="text" class="form-input stripe-input" value="4242 •••• •••• 4242" readonly>
             </div>
           </div>
@@ -941,7 +1068,7 @@
     <div class="modal-card modal-reglages-card">
       <div class="modal-header">
         <h2>Mon Compte & Paramètres</h2>
-        <button class="btn-modal-close btn-close-compte-modal" type="button" aria-label="Fermer (Échap)" title="Fermer (Échap)">✕</button>
+        <button class="btn-modal-close btn-close-compte-modal" type="button" aria-label="Fermer (Échap)" title="Fermer (Échap)">&times;</button>
       </div>
       <div class="modal-body">
         <div class="reglages-item">
@@ -973,7 +1100,7 @@
     <div class="modal-card modal-milieux-card">
       <div class="modal-header">
         <h2>Milieux Favorables (Données Naturalistes)</h2>
-        <button class="btn-modal-close btn-close-compte-modal" type="button" aria-label="Fermer (Échap)" title="Fermer (Échap)">✕</button>
+        <button class="btn-modal-close btn-close-compte-modal" type="button" aria-label="Fermer (Échap)" title="Fermer (Échap)">&times;</button>
       </div>
       <div class="modal-body">
         <div class="milieux-art-badge">
