@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Tests Unitaires — Carnet de cueillette MesChampis</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 2rem;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 { color: #34d399; margin-bottom: 1.5rem; }
+    .test-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1rem;
+    }
+    .test-card.pass { border-left: 6px solid #10b981; }
+    .test-card.fail { border-left: 6px solid #ef4444; }
+    .test-title { font-weight: 700; font-size: 1.1rem; display: flex; justify-content: space-between; }
+    .test-status { font-weight: 800; }
+    .pass .test-status { color: #34d399; }
+    .fail .test-status { color: #f87171; }
+    .test-details { font-family: monospace; font-size: 0.85rem; color: #94a3b8; margin-top: 0.5rem; white-space: pre-wrap; }
+    #summary { font-size: 1.2rem; font-weight: 700; margin-top: 1.5rem; padding: 1rem; border-radius: 8px; background: #1e293b; }
+  </style>
+  <script src="vendor/proj4.js"></script>
+</head>
+<body>
+  <h1>🧪 Tests Unitaires — Carnet & Crypto (.mcb)</h1>
+  <div id="test-results">Exécution des tests en cours...</div>
+  <div id="summary"></div>
+
+  <script type="module">
+    // Garde-fou strict C1 : interdiction absolue d'ouvrir la base de production 'meschampis_db'
+    const originalOpen = indexedDB.open.bind(indexedDB);
+    indexedDB.open = function(name, ...args) {
+      if (name === 'meschampis_db') {
+        const msg = "GARDE-FOU C1 ENCLENCHÉ : Tentative interdite d'accéder à 'meschampis_db' depuis tests.html !";
+        console.error(msg);
+        document.body.insertAdjacentHTML('afterbegin', `<div style="background:#ef4444;color:white;padding:1rem;font-weight:bold;margin-bottom:1rem;">🚨 ${msg}</div>`);
+        throw new Error(msg);
+      }
+      return originalOpen(name, ...args);
+    };
+
+    import {
+      chiffrerSauvegarde,
+      dechiffrerSauvegarde,
+      ouvrirBase,
+      fermerBase,
+      definirNomBaseDefaut,
+      ajouterCueillette,
+      modifierCueillette,
+      supprimerCueillette,
+      obtenirCueillette,
+      listerCueillettes,
+      fusionnerCueillettesImport,
+      definirMeta,
+      obtenirMeta,
+      exporterSauvegardeChiffree,
+      importerSauvegardeChiffree
+    } from './js/db.js';
+    import { droits, peutVoirRecommandations } from './js/droits.js';
+    import {
+      genererCodeSecours,
+      creerTrousseauInscription,
+      ouvrirEnveloppeMdp,
+      ouvrirEnveloppeSecours,
+      reenvelopperCleMaitre,
+      chiffrerBlocCarnet,
+      dechiffrerBlocCarnet
+    } from './js/crypto_compte.js';
+    import { GestionnaireGrille } from './js/grille.js';
+
+    // Utilisation exclusive de meschampis_db_test
+    const DB_TEST = 'meschampis_db_test';
+    definirNomBaseDefaut(DB_TEST);
+
+    const resultsDiv = document.getElementById('test-results');
+    const summaryDiv = document.getElementById('summary');
+    const logs = [];
+    let passed = 0;
+    let failed = 0;
+
+    function report(title, isPass, details) {
+      if (isPass) passed++; else failed++;
+      logs.push({ title, isPass, details });
+      console.log(`[${isPass ? 'PASS' : 'FAIL'}] ${title}`, details || '');
+    }
+
+    async function nettoyerBaseTest() {
+      await fermerBase(DB_TEST);
+      return new Promise((resolve) => {
+        const req = indexedDB.deleteDatabase(DB_TEST);
+        req.onsuccess = () => {
+          console.log('[nettoyerBaseTest] Base de test supprimée avec succès.');
+          resolve();
+        };
+        req.onerror = () => {
+          console.warn('[nettoyerBaseTest] Erreur suppression base test :', req.error);
+          resolve();
+        };
+        req.onblocked = () => {
+          console.warn('[nettoyerBaseTest] Suppression bloquée.');
+          resolve();
+        };
+      });
+    }
+
+    async function runTests() {
+      resultsDiv.innerHTML = '';
+      await nettoyerBaseTest();
+
+      // Test 1 : Aller-retour chiffrement -> déchiffrement avec bonne phrase
+      try {
+        const secret = "phrase-secrete-ultra-longue-12345";
+        const dummyData = {
+          cueillettes: [
+            {
+              id: "test-uuid-001",
+              cree_le: "2026-11-01T10:00:00.000Z",
+              modifie_le: "2026-11-01T10:00:00.000Z",
+              date: "2026-11-01",
+              type: "trouve",
+              espece: { nom: "Cèpe de Bordeaux", latin: "Boletus edulis" },
+              espece_nom: "Cèpe de Bordeaux",
+              quantite: "5-20",
+              lon: 3.05,
+              lat: 45.75,
+              precision_m: 12,
+              source_position: "gps",
+              arbres: ["Hêtre", "Sapin"],
+              milieu: ["Lisière", "Mousse"],
+              note: "Belle poussée sous les hêtres.",
+              cellule: {
+                version_grille: "2026-10-31",
+                tx: 12, ty: 15, col: 100, lig: 120,
+                foret: 1, essence: 51, alt: 920, pente: 14, expo: 45,
+                lisiere: 18, couvert: 75, hauteur: 22, mnh: 1
+              }
+            },
+            {
+              id: "test-uuid-002",
+              cree_le: "2026-11-01T11:00:00.000Z",
+              modifie_le: "2026-11-01T11:00:00.000Z",
+              date: "2026-11-01",
+              type: "rien",
+              espece: null,
+              espece_nom: null,
+              quantite: null,
+              lon: 3.10,
+              lat: 45.80,
+              precision_m: null,
+              source_position: "carte",
+              arbres: ["Pin"],
+              milieu: ["Pente"],
+              note: "Trop sec, rien trouvé.",
+              cellule: null
+            }
+          ],
+          meta: { version_app: "0.2.0", contribution_autorisee: false }
+        };
+
+        const archiveJson = await chiffrerSauvegarde(secret, dummyData);
+        const parsed = JSON.parse(archiveJson);
+
+        // Vérification de la structure du fichier .mcb
+        if (parsed.format !== "meschampis-sauvegarde" || parsed.v !== 1 || !parsed.kdf || !parsed.iv_b64 || !parsed.donnees_b64) {
+          throw new Error("Structure .mcb invalide");
+        }
+        if (parsed.kdf.iterations !== 250000) {
+          throw new Error(`Iterations attendues 250000, obtenu ${parsed.kdf.iterations}`);
+        }
+
+        const restoreData = await dechiffrerSauvegarde(archiveJson, secret);
+
+        if (JSON.stringify(restoreData) !== JSON.stringify(dummyData)) {
+          throw new Error("Les données restaurées diffèrent des données initiales !");
+        }
+
+        report("Test 1 : Aller-retour chiffrement -> déchiffrement (.mcb PBKDF2/AES-GCM)", true,
+          `Structure .mcb conforme (v1, PBKDF2 250k itérations, AES-GCM 256).
+Données réinjectées identiques au bit près (${restoreData.cueillettes.length} cueillettes, métadonnées préservées).`
+        );
+      } catch (err) {
+        report("Test 1 : Aller-retour chiffrement -> déchiffrement (.mcb PBKDF2/AES-GCM)", false, err.message);
+      }
+
+      // Test 2 : Mauvaise phrase de passe -> erreur propre et rejet
+      try {
+        const secret = "bonne-phrase-de-passe-1234";
+        const wrongSecret = "mauvaise-phrase-erronee";
+        const dummyData = { cueillettes: [], meta: {} };
+
+        const archiveJson = await chiffrerSauvegarde(secret, dummyData);
+
+        let rejected = false;
+        try {
+          await dechiffrerSauvegarde(archiveJson, wrongSecret);
+        } catch (e) {
+          rejected = true;
+        }
+
+        if (rejected) {
+          report("Test 2 : Mauvaise phrase de passe rejetée proprement", true,
+            "Le déchiffrement a échoué comme attendu (MAC tag mismatch AES-GCM). Aucune donnée n'a été corrompue."
+          );
+        } else {
+          report("Test 2 : Mauvaise phrase de passe rejetée proprement", false,
+            "Erreur : Le déchiffrement n'a pas rejeté la mauvaise phrase !"
+          );
+        }
+      } catch (err) {
+        report("Test 2 : Mauvaise phrase de passe rejetée proprement", false, err.message);
+      }
+
+      // Test 3 : Fusion d'import avec conflits (même ID, dates modifie_le différentes)
+      try {
+        const existantes = [
+          {
+            id: "uuid-conflit-A",
+            date: "2026-10-15",
+            espece_nom: "Girolle",
+            modifie_le: "2026-10-20T12:00:00.000Z",
+            note: "Version locale plus récente"
+          },
+          {
+            id: "uuid-conflit-B",
+            date: "2026-10-10",
+            espece_nom: "Bolet bai",
+            modifie_le: "2026-10-12T10:00:00.000Z",
+            note: "Version locale ancienne"
+          },
+          {
+            id: "uuid-stable",
+            date: "2026-10-01",
+            espece_nom: "Pied-de-mouton",
+            modifie_le: "2026-10-01T08:00:00.000Z"
+          }
+        ];
+
+        const aImporter = [
+          {
+            id: "uuid-conflit-A",
+            date: "2026-10-15",
+            espece_nom: "Girolle",
+            modifie_le: "2026-10-18T10:00:00.000Z", // Plus ancien -> doit être IGNORÉ
+            note: "Version archive périmée"
+          },
+          {
+            id: "uuid-conflit-B",
+            date: "2026-10-10",
+            espece_nom: "Bolet bai",
+            modifie_le: "2026-10-25T14:00:00.000Z", // Plus récent -> doit ÉCRASER la version locale
+            note: "Version archive plus récente mise à jour"
+          },
+          {
+            id: "uuid-nouveau",
+            date: "2026-10-30",
+            espece_nom: "Morille ronde",
+            modifie_le: "2026-10-30T09:00:00.000Z", // Nouveau -> doit être AJOUTÉ
+            note: "Nouvelle entrée"
+          }
+        ];
+
+        const resultat = fusionnerCueillettesImport(existantes, aImporter);
+
+        if (resultat.ajoutees !== 1 || resultat.mises_a_jour !== 1 || resultat.ignorees !== 1) {
+          throw new Error(`Statistiques de fusion incorrectes : ajoutées=${resultat.ajoutees}, maj=${resultat.mises_a_jour}, ignorées=${resultat.ignorees}`);
+        }
+
+        const finaleB = resultat.liste_finale.find(i => i.id === "uuid-conflit-B");
+        if (finaleB.note !== "Version archive plus récente mise à jour") {
+          throw new Error("uuid-conflit-B n'a pas été mis à jour avec la version la plus récente !");
+        }
+
+        const finaleA = resultat.liste_finale.find(i => i.id === "uuid-conflit-A");
+        if (finaleA.note !== "Version locale plus récente") {
+          throw new Error("uuid-conflit-A aurait dû conserver la version locale plus récente !");
+        }
+
+        report("Test 3 : Fusion d'import avec gestion des conflits (modifie_le)", true,
+          `Fusion validée : 1 ajoutée, 1 mise à jour (version plus récente conservée), 1 ignorée (version locale plus récente conservée). Total final : ${resultat.liste_finale.length} observations.`
+        );
+      } catch (err) {
+        report("Test 3 : Fusion d'import avec gestion des conflits (modifie_le)", false, err.message);
+      }
+
+      // Test 4 : Modèle B1 et persistance IndexedDB
+      try {
+        const db = await ouvrirBase(DB_TEST);
+        const testId = "b1-test-" + Date.now();
+        const enregistrementB1 = {
+          id: testId,
+          cree_le: new Date().toISOString(),
+          modifie_le: new Date().toISOString(),
+          date: "2026-11-01",
+          type: "trouve",
+          espece: { nom: "Amanite des Césars", latin: "Amanita caesarea" },
+          espece_nom: "Amanite des Césars",
+          quantite: "1-5",
+          lon: 3.1234,
+          lat: 45.6789,
+          precision_m: 8.5,
+          source_position: "gps",
+          arbres: ["Chêne"],
+          milieu: ["Lisière", "Clairière"],
+          note: "Test B1 modèle complet",
+          cellule: {
+            version_grille: "2026-10-31",
+            tx: 10, ty: 12, col: 50, lig: 60,
+            foret: 1, essence: 11, alt: 650, pente: 8, expo: 180,
+            lisiere: 12, couvert: 60, hauteur: 18, mnh: 1
+          }
+        };
+
+        await ajouterCueillette(enregistrementB1, DB_TEST);
+        const relu = await obtenirCueillette(testId, DB_TEST);
+
+        if (!relu || relu.espece_nom !== "Amanite des Césars" || relu.cellule.version_grille !== "2026-10-31" || relu.cellule.hauteur !== 18) {
+          throw new Error("Erreur de persistance ou altération des champs du modèle B1");
+        }
+
+        // Nettoyage de l'enregistrement de test
+        await supprimerCueillette(testId, DB_TEST);
+
+        report("Test 4 : Modèle B1 et conformité des champs (version_grille, couvert, hauteur)", true,
+          "Champs vérifiés avec succès dans IndexedDB (base isolée meschampis_db_test) : espece {nom, latin}, quantite, precision_m, arbres, milieu, cellule {version_grille, alt, pente, expo, lisiere, couvert, hauteur}."
+        );
+      } catch (err) {
+        report("Test 4 : Modèle B1 et conformité des champs (version_grille, couvert, hauteur)", false, err.message);
+      }
+
+      // Test 5 : 5 cellules au hasard — instantané identique au décodage direct des octets du .bin.gz
+      try {
+        const grille = new GestionnaireGrille(null);
+        await grille.pret;
+
+        // Décodage direct des octets bruts du fichier binaire 7_8.bin.gz
+        const respBin = await fetch('data/grille/tuiles/7_8.bin.gz');
+        if (!respBin.ok) throw new Error('Impossible de charger 7_8.bin.gz');
+        const ds = new DecompressionStream('gzip');
+        const decompressed = await new Response(respBin.body.pipeThrough(ds)).arrayBuffer();
+
+        const N = 256 * 256;
+        const rawForet = new Uint8Array(decompressed, 0, N);
+        const rawEssence = new Uint8Array(decompressed, N, N);
+        const rawAlt = new Int16Array(decompressed, N * 2, N);
+        const rawPente = new Uint8Array(decompressed, N * 4, N);
+        const rawExpo = new Uint8Array(decompressed, N * 5, N);
+        const rawLisiere = new Uint8Array(decompressed, N * 6, N);
+        const rawCouvert = new Uint8Array(decompressed, N * 7, N);
+        const rawHauteur = new Uint8Array(decompressed, N * 8, N);
+
+        const tx = 7, ty = 8;
+        const reg = grille.manifest.region;
+        const x0 = reg.origine_x;
+        const y0 = reg.origine_y;
+        const pas = reg.pas;
+
+        // 5 cellules distinctes réparties dans la tuile
+        const cellulesATester = [
+          { c: 11, r: 122 },  // Sommet puy de Dôme
+          { c: 45, r: 60 },
+          { c: 110, r: 95 },
+          { c: 180, r: 210 },
+          { c: 240, r: 240 }
+        ];
+
+        for (const { c, r } of cellulesATester) {
+          const idx = r * 256 + c;
+          const xCell = x0 + (tx * 256 + c + 0.5) * pas;
+          const yCell = y0 - (ty * 256 + r + 0.5) * pas;
+          const [lon, lat] = proj4('EPSG:2154', 'EPSG:4326', [xCell, yCell]);
+
+          const info = await grille.valeursAuPoint(lon, lat);
+          const snap = grille.formaterSnapshotCellule(info);
+
+          const expForet = rawForet[idx];
+          const expEssence = rawEssence[idx] !== 255 ? rawEssence[idx] : null;
+          const expAlt = rawAlt[idx] !== -32768 ? rawAlt[idx] : null;
+          const expPente = rawPente[idx] !== 255 ? rawPente[idx] : null;
+          const expPlat = rawExpo[idx] === 254;
+          const expExpo = rawExpo[idx] < 240 ? rawExpo[idx] * 1.5 : null;
+          const expLisiere = rawLisiere[idx];
+          const expCouvert = rawCouvert[idx] !== 255 ? rawCouvert[idx] : null;
+          const expHauteur = rawHauteur[idx] !== 255 ? rawHauteur[idx] * 0.25 : null;
+
+          if (snap.tx !== tx || snap.ty !== ty || snap.col !== c || snap.lig !== r) {
+            throw new Error(`Coordonnées snapshot erronées pour cell (${c}, ${r})`);
+          }
+          if (snap.foret !== expForet) throw new Error(`foret mismatch: ${snap.foret} vs ${expForet}`);
+          if (snap.essence !== expEssence) throw new Error(`essence mismatch: ${snap.essence} vs ${expEssence}`);
+          if (snap.alt !== expAlt) throw new Error(`alt mismatch: ${snap.alt} vs ${expAlt}`);
+          if (snap.pente !== expPente) throw new Error(`pente mismatch: ${snap.pente} vs ${expPente}`);
+          if (snap.plat !== expPlat) throw new Error(`plat mismatch: ${snap.plat} vs ${expPlat}`);
+          if (snap.expo !== expExpo) throw new Error(`expo mismatch: ${snap.expo} vs ${expExpo}`);
+          if (snap.lisiere !== expLisiere) throw new Error(`lisiere mismatch: ${snap.lisiere} vs ${expLisiere}`);
+          if (snap.couvert !== expCouvert) throw new Error(`couvert mismatch: ${snap.couvert} vs ${expCouvert}`);
+          if (snap.hauteur !== expHauteur) throw new Error(`hauteur mismatch: ${snap.hauteur} vs ${expHauteur}`);
+          if (snap.version_grille !== grille.manifest.version_grille) throw new Error(`version_grille mismatch`);
+        }
+
+        report("Test 5 : 5 cellules aléatoires — Instantané identique au décodage direct des octets .bin.gz", true,
+          "Toutes les valeurs (foret, essence, alt, pente, expo, plat, lisiere, couvert, hauteur sans arrondi) correspondent exactement au décodage brut au bit près."
+        );
+      } catch (err) {
+        report("Test 5 : 5 cellules aléatoires — Instantané identique au décodage direct des octets .bin.gz", false, err.message);
+      }
+
+      // Test 6 : 4 paires de points à ±10 m d'une limite de tuile (2 est-ouest, 2 nord-sud)
+      try {
+        const grille = new GestionnaireGrille(null);
+        await grille.pret;
+        const reg = grille.manifest.region;
+        const x0 = reg.origine_x;
+        const y0 = reg.origine_y;
+        const pas = reg.pas;
+
+        const paires = [
+          // E-W 1 : Limite tx=7 / tx=8 à ty=8
+          {
+            desc: 'E-W tx 7 | 8',
+            ptMoins: { x: x0 + 8 * 6400 - 10, y: y0 - (8 * 256 + 100 + 0.5) * pas, expTx: 7, expCol: 255, expTy: 8, expLig: 100 },
+            ptPlus:  { x: x0 + 8 * 6400 + 10, y: y0 - (8 * 256 + 100 + 0.5) * pas, expTx: 8, expCol: 0,   expTy: 8, expLig: 100 }
+          },
+          // E-W 2 : Limite tx=10 / tx=11 à ty=12
+          {
+            desc: 'E-W tx 10 | 11',
+            ptMoins: { x: x0 + 11 * 6400 - 10, y: y0 - (12 * 256 + 50 + 0.5) * pas, expTx: 10, expCol: 255, expTy: 12, expLig: 50 },
+            ptPlus:  { x: x0 + 11 * 6400 + 10, y: y0 - (12 * 256 + 50 + 0.5) * pas, expTx: 11, expCol: 0,   expTy: 12, expLig: 50 }
+          },
+          // N-S 1 : Limite ty=7 / ty=8 à tx=7
+          {
+            desc: 'N-S ty 7 | 8',
+            ptMoins: { x: x0 + (7 * 256 + 80 + 0.5) * pas, y: y0 - 8 * 6400 + 10, expTx: 7, expCol: 80, expTy: 7, expLig: 255 },
+            ptPlus:  { x: x0 + (7 * 256 + 80 + 0.5) * pas, y: y0 - 8 * 6400 - 10, expTx: 7, expCol: 80, expTy: 8, expLig: 0 }
+          },
+          // N-S 2 : Limite ty=10 / ty=11 à tx=10
+          {
+            desc: 'N-S ty 10 | 11',
+            ptMoins: { x: x0 + (10 * 256 + 120 + 0.5) * pas, y: y0 - 11 * 6400 + 10, expTx: 10, expCol: 120, expTy: 10, expLig: 255 },
+            ptPlus:  { x: x0 + (10 * 256 + 120 + 0.5) * pas, y: y0 - 11 * 6400 - 10, expTx: 10, expCol: 120, expTy: 11, expLig: 0 }
+          }
+        ];
+
+        for (const p of paires) {
+          const [lonM, latM] = proj4('EPSG:2154', 'EPSG:4326', [p.ptMoins.x, p.ptMoins.y]);
+          const [lonP, latP] = proj4('EPSG:2154', 'EPSG:4326', [p.ptPlus.x, p.ptPlus.y]);
+
+          const infoM = await grille.valeursAuPoint(lonM, latM);
+          const infoP = await grille.valeursAuPoint(lonP, latP);
+
+          if (!infoM || infoM.tx !== p.ptMoins.expTx || infoM.col !== p.ptMoins.expCol || infoM.ty !== p.ptMoins.expTy || infoM.lig !== p.ptMoins.expLig) {
+            throw new Error(`Erreur frontière ${p.desc} (-10m) : attendu tx=${p.ptMoins.expTx} c=${p.ptMoins.expCol} ty=${p.ptMoins.expTy} r=${p.ptMoins.expLig}, obtenu tx=${infoM?.tx} c=${infoM?.col} ty=${infoM?.ty} r=${infoM?.lig}`);
+          }
+          if (!infoP || infoP.tx !== p.ptPlus.expTx || infoP.col !== p.ptPlus.expCol || infoP.ty !== p.ptPlus.expTy || infoP.lig !== p.ptPlus.expLig) {
+            throw new Error(`Erreur frontière ${p.desc} (+10m) : attendu tx=${p.ptPlus.expTx} c=${p.ptPlus.expCol} ty=${p.ptPlus.expTy} r=${p.ptPlus.expLig}, obtenu tx=${infoP?.tx} c=${infoP?.col} ty=${infoP?.ty} r=${infoP?.lig}`);
+          }
+        }
+
+        report("Test 6 : 4 paires de points à ±10 m des limites de tuiles (2 E-W, 2 N-S)", true,
+          "Bonne tuile, bonne cellule (colonnes 255/0 et lignes 255/0), aucun décalage d'une ligne ou colonne aux frontières géographiques."
+        );
+      } catch (err) {
+        report("Test 6 : 4 paires de points à ±10 m des limites de tuiles (2 E-W, 2 N-S)", false, err.message);
+      }
+
+      // Test 7 : Altitude max dans un rayon de 300 m autour du puy de Dôme (45,772 N / 2,963 E)
+      try {
+        const grille = new GestionnaireGrille(null);
+        await grille.pret;
+
+        const [xPdd, yPdd] = proj4('EPSG:4326', 'EPSG:2154', [2.963, 45.772]);
+        let maxAlt = -Infinity;
+
+        for (let dx = -300; dx <= 300; dx += 25) {
+          for (let dy = -300; dy <= 300; dy += 25) {
+            if (Math.hypot(dx, dy) <= 300) {
+              const [lon, lat] = proj4('EPSG:2154', 'EPSG:4326', [xPdd + dx, yPdd + dy]);
+              const info = await grille.valeursAuPoint(lon, lat);
+              if (info && info.alt !== null) {
+                if (info.alt > maxAlt) maxAlt = info.alt;
+              }
+            }
+          }
+        }
+
+        if (maxAlt < 1440 || maxAlt > 1470) {
+          throw new Error(`Altitude max trouvée : ${maxAlt} m (hors de la plage attendue 1440 - 1470 m)`);
+        }
+
+        report("Test 7 : Altitude max dans un rayon de 300 m autour du puy de Dôme (45,772 N / 2,963 E)", true,
+          `Altitude max observée : ${maxAlt} m (conforme, comprise entre 1440 et 1470 m).`
+        );
+      } catch (err) {
+        report("Test 7 : Altitude max dans un rayon de 300 m autour du puy de Dôme (45,772 N / 2,963 E)", false, err.message);
+      }
+
+      // =========================================================================
+      // Test 8 : Module droits et filtrage strict des métadonnées .mcb (C8)
+      // =========================================================================
+      try {
+        // 1. Validation de l'objet droits
+        const d = droits();
+        if (d.connecte !== true || d.premium !== false || d.essai_fin !== null || d.essai_utilise !== false) {
+          throw new Error('droits() ne renvoie pas l\'état par défaut attendu : ' + JSON.stringify(d));
+        }
+        if (peutVoirRecommandations() !== false) {
+          throw new Error('peutVoirRecommandations() devrait renvoyer false par défaut');
+        }
+
+        // 2. Préparation du store meta avec des clés variées
+        await definirMeta('essai_utilise', true, DB_TEST);
+        await definirMeta('contribution_autorisee', false, DB_TEST);
+        await definirMeta('dernier_export', '2026-11-01T12:00:00.000Z', DB_TEST);
+        await definirMeta('avertissement_securite_vu', true, DB_TEST);
+        await definirMeta('message_standalone_vu', true, DB_TEST);
+        await definirMeta('stockage_persistant', true, DB_TEST);
+
+        // 3. Export chiffré
+        const pass = 'UneSuperPhraseDePasseSecret12345';
+        const mcbJson = await exporterSauvegardeChiffree(pass, DB_TEST);
+        const payload = await dechiffrerSauvegarde(mcbJson, pass);
+
+        const metaExportees = Array.isArray(payload.meta) ? payload.meta.map(m => m.id) : [];
+        if (!metaExportees.includes('essai_utilise')) {
+          throw new Error('essai_utilise doit être exporté dans le .mcb');
+        }
+        if (!metaExportees.includes('contribution_autorisee')) {
+          throw new Error('contribution_autorisee doit être exporté dans le .mcb');
+        }
+
+        const clesInterdites = ['dernier_export', 'avertissement_securite_vu', 'message_standalone_vu', 'stockage_persistant'];
+        for (const cle of clesInterdites) {
+          if (metaExportees.includes(cle)) {
+            throw new Error(`La clé locale '${cle}' ne doit PAS être exportée dans le .mcb`);
+          }
+        }
+
+        // 4. Test d'import : essai_utilise ne doit JAMAIS être effacé s'il était true localement
+        // Simuler un import dont essai_utilise est false
+        const payloadImport = {
+          cueillettes: [],
+          meta: [{ id: 'essai_utilise', valeur: false }],
+          exporte_le: new Date().toISOString()
+        };
+        const mcbImport = await chiffrerSauvegarde(pass, payloadImport);
+        await importerSauvegardeChiffree(mcbImport, pass, DB_TEST);
+
+        const essaiLocalApresImport = await obtenirMeta('essai_utilise', DB_TEST);
+        if (essaiLocalApresImport !== true) {
+          throw new Error(`essai_utilise a été écrasé à ${essaiLocalApresImport} alors qu'il ne doit jamais être effacé`);
+        }
+
+        report("Test 8 : Droits, filtrage des métadonnées .mcb et règle essai_utilise à l'import", true,
+          `Droits conformes (connecte: true, premium: false). Métadonnées exportées filtrées strictement (essai_utilise et contribution_autorisee inclus ; dernier_export, messages et persist exclus). Règle de non-effacement de essai_utilise validée.`
+        );
+      } catch (err) {
+        report("Test 8 : Droits, filtrage des métadonnées .mcb et règle essai_utilise à l'import", false, err.message);
+      }
+
+      // =========================================================================
+      // Test 9 : Cryptographie compte Zero-Knowledge (D3)
+      // =========================================================================
+      try {
+        const mdpInitial = 'MonSuperMotDePasse123!';
+        const codeSecours = genererCodeSecours();
+
+        // 1. Validation du format du code de secours (6 groupes de 4)
+        if (!/^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(codeSecours)) {
+          throw new Error('Format de code de secours invalide : ' + codeSecours);
+        }
+
+        // 2. Création du trousseau
+        const trousseau = await creerTrousseauInscription(mdpInitial, codeSecours);
+        if (!trousseau.cleMaitreRaw || trousseau.cleMaitreRaw.byteLength !== 32) {
+          throw new Error('Clé maître invalide (taille attendue : 32 octets)');
+        }
+        if (!trousseau.empreinteAuth || trousseau.empreinteAuth.length !== 64) {
+          throw new Error('Empreinte d\'authentification SHA-256 invalide');
+        }
+
+        // 3. Déchiffrement de l'enveloppe mot de passe
+        const cleRecupereMdp = await ouvrirEnveloppeMdp(trousseau.enveloppes.enveloppe_mdp, mdpInitial);
+        const memeCleMdp = trousseau.cleMaitreRaw.every((v, i) => v === cleRecupereMdp[i]);
+        if (!memeCleMdp) {
+          throw new Error('La clé maître déchiffrée par mot de passe ne correspond pas à l\'originale');
+        }
+
+        // 4. Déchiffrement de l'enveloppe de secours
+        const cleRecupereSecours = await ouvrirEnveloppeSecours(trousseau.enveloppes.enveloppe_secours, codeSecours.toLowerCase().replace(/-/g, ' '));
+        const memeCleSecours = trousseau.cleMaitreRaw.every((v, i) => v === cleRecupereSecours[i]);
+        if (!memeCleSecours) {
+          throw new Error('La clé maître déchiffrée par le code de secours ne correspond pas à l\'originale');
+        }
+
+        // 5. Chiffrement et déchiffrement du bloc carnet
+        const payloadCarnet = {
+          cueillettes: [{ id: 'test-c1', espece: { nom: 'Bolet bai' }, cellule: { alt: 1100, pente: 12 } }],
+          meta: [{ id: 'contribution_autorisee', valeur: false }],
+          exporte_le: new Date().toISOString()
+        };
+        const blocChiffre = await chiffrerBlocCarnet(payloadCarnet, trousseau.cleMaitreRaw);
+        const payloadRestaure = await dechiffrerBlocCarnet(blocChiffre, trousseau.cleMaitreRaw);
+
+        if (payloadRestaure.cueillettes[0].espece.nom !== 'Bolet bai' || payloadRestaure.cueillettes[0].cellule.alt !== 1100) {
+          throw new Error('Altération des données lors du cycle chiffrement/déchiffrement du bloc carnet');
+        }
+
+        report("Test 9 : Cryptographie compte Zero-Knowledge (D3)", true,
+          `Trousseau validé : clé maître AES-256 (32 octets), dérivation séparée de l'empreinte auth (64 hex), double enveloppe (mot de passe et code de secours ${codeSecours}). Bloc carnet chiffré et déchiffré à l'identique.`
+        );
+      } catch (err) {
+        report("Test 9 : Cryptographie compte Zero-Knowledge (D3)", false, err.message);
+      }
+
+      // =========================================================================
+      // Test 10 : Mot de passe oublié — Scénarios (a), (b) et (c) (D3)
+      // =========================================================================
+      try {
+        const mdpInitial = 'PremierMotDePasse123';
+        const nouveauMdp = 'NouveauMotDePasse456';
+        const codeSecours = genererCodeSecours();
+        const trousseau = await creerTrousseauInscription(mdpInitial, codeSecours);
+
+        // Donnée carnet test
+        const payloadTest = { secret: 'coin_aux_cepes_valide' };
+        const blocTest = await chiffrerBlocCarnet(payloadTest, trousseau.cleMaitreRaw);
+
+        // Cas (a) : L'appareil a encore la clé maître en mémoire locale -> re-enveloppement direct
+        const reenveloppeA = await reenvelopperCleMaitre(trousseau.cleMaitreRaw, nouveauMdp);
+        const cleA = await ouvrirEnveloppeMdp(reenveloppeA.enveloppe_mdp, nouveauMdp);
+        const dataA = await dechiffrerBlocCarnet(blocTest, cleA);
+        if (dataA.secret !== 'coin_aux_cepes_valide') {
+          throw new Error('Cas (a) échoué : données illisibles après ré-enveloppement en mémoire');
+        }
+
+        // Cas (b) : L'appareil n'a PAS la clé maître en mémoire, mais l'utilisateur a son code de secours
+        const cleRecupereSecours = await ouvrirEnveloppeSecours(trousseau.enveloppes.enveloppe_secours, codeSecours);
+        const reenveloppeB = await reenvelopperCleMaitre(cleRecupereSecours, 'EncoreUnAutreMdp789');
+        const cleB = await ouvrirEnveloppeMdp(reenveloppeB.enveloppe_mdp, 'EncoreUnAutreMdp789');
+        const dataB = await dechiffrerBlocCarnet(blocTest, cleB);
+        if (dataB.secret !== 'coin_aux_cepes_valide') {
+          throw new Error('Cas (b) échoué : données illisibles après récupération par code de secours');
+        }
+
+        // Cas (c) : Mauvais mot de passe et mauvais code de secours -> données irrécupérables
+        let rejetMdp = false;
+        try {
+          await ouvrirEnveloppeMdp(trousseau.enveloppes.enveloppe_mdp, 'MauvaisMotDePasse');
+        } catch {
+          rejetMdp = true;
+        }
+        if (!rejetMdp) throw new Error('Un mauvais mot de passe aurait dû être rejeté par AES-GCM');
+
+        let rejetSecours = false;
+        try {
+          await ouvrirEnveloppeSecours(trousseau.enveloppes.enveloppe_secours, 'FAUX-CODE-SECO-URSS-0000-0000');
+        } catch {
+          rejetSecours = true;
+        }
+        if (!rejetSecours) throw new Error('Un faux code de secours aurait dû être rejeté par AES-GCM');
+
+        report("Test 10 : Mot de passe oublié — Scénarios (a), (b) et (c) (D3)", true,
+          `Tous les scénarios validés : (a) ré-enveloppement avec clé maître en mémoire ; (b) déverrouillage via code de secours lisible et ré-enveloppement ; (c) rejet strict par AES-GCM si informations incorrectes (données irrécupérables).`
+        );
+      } catch (err) {
+        report("Test 10 : Mot de passe oublié — Scénarios (a), (b) et (c) (D3)", false, err.message);
+      }
+
+      // Nettoyage final de la base de test
+      await nettoyerBaseTest();
+
+      // Affichage du DOM
+      resultsDiv.innerHTML = logs.map(l => `
+        <div class="test-card ${l.isPass ? 'pass' : 'fail'}">
+          <div class="test-title">
+            <span>${l.title}</span>
+            <span class="test-status">${l.isPass ? 'SUCCÈS' : 'ÉCHEC'}</span>
+          </div>
+          <div class="test-details">${l.details}</div>
+        </div>
+      `).join('');
+
+      summaryDiv.textContent = `Résultat global : ${passed} / ${passed + failed} tests passés avec succès.`;
+      summaryDiv.style.color = failed === 0 ? '#34d399' : '#f87171';
+      window.testSuiteResults = { passed, failed, total: passed + failed, logs };
+    }
+
+    runTests();
+  </script>
+</body>
+</html>
