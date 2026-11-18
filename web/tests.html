@@ -32,7 +32,7 @@
   <script src="vendor/proj4.js"></script>
 </head>
 <body>
-  <h1>🧪 Tests Unitaires — Carnet & Crypto (.mcb)</h1>
+  <h1>Tests Unitaires — Carnet & Crypto (.mcb)</h1>
   <div id="test-results">Exécution des tests en cours...</div>
   <div id="summary"></div>
 
@@ -43,7 +43,7 @@
       if (name === 'meschampis_db') {
         const msg = "GARDE-FOU C1 ENCLENCHÉ : Tentative interdite d'accéder à 'meschampis_db' depuis tests.html !";
         console.error(msg);
-        document.body.insertAdjacentHTML('afterbegin', `<div style="background:#ef4444;color:white;padding:1rem;font-weight:bold;margin-bottom:1rem;">🚨 ${msg}</div>`);
+        document.body.insertAdjacentHTML('afterbegin', `<div style="background:#ef4444;color:white;padding:1rem;font-weight:bold;margin-bottom:1rem;">${msg}</div>`);
         throw new Error(msg);
       }
       return originalOpen(name, ...args);

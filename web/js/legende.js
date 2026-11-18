@@ -81,14 +81,14 @@ export function renderLegendeCouvert(container, map = null) {
         </div>
       </div>
       <div class="pilot-zone-box">
-        <div class="pilot-badge">✅ LiDAR HD — 100% des forêts du 63</div>
+        <div class="pilot-badge"><span class="badge-dot-live"></span> LiDAR HD — 100% forêts 63</div>
         <p class="pilot-text">Accès rapide aux massifs forestiers :</p>
         <div class="pilot-buttons-row">
-          <button class="btn-goto-massif btn-goto-puys" type="button">🎯 Puys</button>
-          <button class="btn-goto-massif btn-goto-sancy" type="button">🎯 Sancy</button>
-          <button class="btn-goto-massif btn-goto-livradois" type="button">🎯 Livradois</button>
-          <button class="btn-goto-massif btn-goto-combrailles" type="button">🎯 Combrailles</button>
-          <button class="btn-goto-massif btn-goto-foreznord" type="button">🎯 Bois Noirs</button>
+          <button class="btn-goto-massif btn-goto-puys" type="button">Puys</button>
+          <button class="btn-goto-massif btn-goto-sancy" type="button">Sancy</button>
+          <button class="btn-goto-massif btn-goto-livradois" type="button">Livradois</button>
+          <button class="btn-goto-massif btn-goto-combrailles" type="button">Combrailles</button>
+          <button class="btn-goto-massif btn-goto-foreznord" type="button">Bois Noirs</button>
         </div>
       </div>
     </div>
@@ -113,14 +113,14 @@ export function renderLegendeHauteur(container) {
         <span>&ge; 40 m</span>
       </div>
       <div class="pilot-zone-box" style="margin-top: 10px;">
-        <div class="pilot-badge">✅ LiDAR HD — 100% des forêts du 63</div>
+        <div class="pilot-badge"><span class="badge-dot-live"></span> LiDAR HD — 100% forêts 63</div>
         <p class="pilot-text">Accès rapide aux massifs forestiers :</p>
         <div class="pilot-buttons-row">
-          <button class="btn-goto-massif btn-goto-puys" type="button">🎯 Puys</button>
-          <button class="btn-goto-massif btn-goto-sancy" type="button">🎯 Sancy</button>
-          <button class="btn-goto-massif btn-goto-livradois" type="button">🎯 Livradois</button>
-          <button class="btn-goto-massif btn-goto-combrailles" type="button">🎯 Combrailles</button>
-          <button class="btn-goto-massif btn-goto-foreznord" type="button">🎯 Bois Noirs</button>
+          <button class="btn-goto-massif btn-goto-puys" type="button">Puys</button>
+          <button class="btn-goto-massif btn-goto-sancy" type="button">Sancy</button>
+          <button class="btn-goto-massif btn-goto-livradois" type="button">Livradois</button>
+          <button class="btn-goto-massif btn-goto-combrailles" type="button">Combrailles</button>
+          <button class="btn-goto-massif btn-goto-foreznord" type="button">Bois Noirs</button>
         </div>
       </div>
     </div>

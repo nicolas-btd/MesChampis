@@ -857,11 +857,11 @@ export class GestionnaireGrille {
         ? (info.lisiere >= 250 ? '≥ 250 m (Cœur de massif)' : `${info.lisiere} m`)
         : '0 m (Hors forêt)';
 
-      let statutBadge = '<span class="cell-badge out-forest">🍃 Hors forêt</span>';
+      let statutBadge = '<span class="cell-badge out-forest">Hors forêt</span>';
       if (info.codeForet === 1) {
-        statutBadge = '<span class="cell-badge in-forest">🌲 En forêt</span>';
+        statutBadge = '<span class="cell-badge in-forest">En forêt</span>';
       } else if (info.codeForet === 2) {
-        statutBadge = '<span class="cell-badge open-forest" style="background:#e2e8f0; color:#334155; border:1px solid #94a3b8;">🪵 Ouvert (coupe/clairière récente ?)</span>';
+        statutBadge = '<span class="cell-badge open-forest" style="background:#e2e8f0; color:#334155; border:1px solid #94a3b8;">Milieu ouvert (coupe / clairière)</span>';
       }
 
       const couvertStr = info.couvert !== null ? `${info.couvert} %` : '—';

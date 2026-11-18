@@ -208,7 +208,7 @@ export class GestionnaireCompteUI {
     }
 
     try {
-      errBox.textContent = '⏳ Génération de la clé maître et des enveloppes chiffrées...';
+      errBox.textContent = 'Génération de la clé maître et des enveloppes chiffrées...';
 
       // 1. Génération du code de secours
       const codeSecours = genererCodeSecours();
@@ -292,7 +292,7 @@ export class GestionnaireCompteUI {
     }
 
     try {
-      errBox.textContent = '⏳ Connexion et dérivation de l\'empreinte d\'authentification...';
+      errBox.textContent = 'Connexion et dérivation de l\'empreinte d\'authentification...';
 
       // 1. Lire les enveloppes pour récupérer le sel d'authentification
       // En mode démo, connecter va comparer l'empreinte

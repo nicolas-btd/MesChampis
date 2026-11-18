@@ -212,38 +212,38 @@ export class GestionnaireCarteChaleur {
     const criteres = [];
 
     // Analyse des critères satisfaits
-    if (snap.essence === 11) criteres.push('🌳 Peuplement de <strong>Hêtre</strong> (essence très favorable)');
-    else if (snap.essence === 12) criteres.push('🌲 Présence de <strong>Sapin pectiné</strong> (hôte mycorhizien de choix)');
-    else if (snap.essence === 13) criteres.push('🌲 Forêt d\'<strong>Épicéa commun</strong> (biotope à cèpes & bolets)');
-    else if (snap.essence) criteres.push(`🌲 Essence forestière favorable (${snap.essence})`);
+    if (snap.essence === 11) criteres.push('Peuplement de <strong>Hêtre</strong> (essence très favorable)');
+    else if (snap.essence === 12) criteres.push('Présence de <strong>Sapin pectiné</strong> (hôte mycorhizien de choix)');
+    else if (snap.essence === 13) criteres.push('Forêt d\'<strong>Épicéa commun</strong> (biotope à cèpes & bolets)');
+    else if (snap.essence) criteres.push(`Essence forestière favorable (${snap.essence})`);
 
     if (snap.alt >= 700 && snap.alt <= 1300) {
-      criteres.push(`⛰️ Altitude optimale : <strong>${snap.alt} m</strong> (étage montagnard auvergnat)`);
+      criteres.push(`Altitude optimale : <strong>${snap.alt} m</strong> (étage montagnard auvergnat)`);
     }
 
     if (snap.expo !== null && (snap.expo >= 315 || snap.expo <= 90)) {
-      criteres.push(`🧭 Exposition <strong>Nord-Est (${snap.expo.toFixed(0)}°)</strong> : versant frais conservant l'humidité`);
+      criteres.push(`Exposition <strong>Nord-Est (${snap.expo.toFixed(0)}°)</strong> : versant frais conservant l'humidité`);
     } else if (snap.plat) {
-      criteres.push('🧭 Relief de replat / plateau forestier');
+      criteres.push('Relief de replat / plateau forestier');
     }
 
     if (snap.pente <= 25) {
-      criteres.push(`📐 Pente modérée (<strong>${snap.pente}°</strong>) favorisant la rétention hydrique du sol`);
+      criteres.push(`Pente modérée (<strong>${snap.pente}°</strong>) favorisant la rétention hydrique du sol`);
     }
 
     const popupHtml = `
       <div class="popup-chaleur-explication" style="padding: 0.5rem; max-width: 280px; font-size: 0.85rem; line-height: 1.4;">
-        <div style="font-weight: 800; font-size: 1rem; color: #f59e0b; margin-bottom: 0.35rem; display: flex; justify-content: space-between;">
-          <span>🎯 Score écologique : ${score}/100</span>
+        <div style="font-weight: 800; font-size: 1rem; color: #d97736; margin-bottom: 0.35rem; display: flex; justify-content: space-between;">
+          <span>Score écologique : <strong>${score}/100</strong></span>
         </div>
         <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">
-          Pourquoi cette zone ?
+          Critères du biotope
         </div>
         <ul style="padding-left: 1.1rem; margin: 0 0 0.5rem 0; font-size: 0.8rem; color: #e2e8f0;">
           ${criteres.map((c) => `<li style="margin-bottom: 0.25rem;">${c}</li>`).join('')}
         </ul>
         <div style="font-size: 0.72rem; color: var(--text-muted); border-top: 1px solid rgba(255,255,255,0.1); padding-top: 0.35rem; font-style: italic;">
-          ⚠️ Aperçu de démonstration, pas l'algorithme final.
+          Aperçu indicatif de modélisation écologique.
         </div>
       </div>
     `;

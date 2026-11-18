@@ -20,6 +20,30 @@ import {
 import { synchroniserCarnet, incrementerModifsEnAttente } from './sync_carnet.js';
 import { ouvrirModale, fermerModale } from './modales.js';
 
+const ICONS = {
+  trouve: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.5 2 2 6.5 2 12c0 .6.4 1 1 1h18c.6 0 1-.4 1-1 0-5.5-4.5-10-10-10z"/><path d="M10 13v7a2 2 0 0 0 4 0v-7"/><circle cx="8" cy="7" r="1.2" fill="currentColor"/><circle cx="16" cy="7" r="1.2" fill="currentColor"/></svg>`,
+  rien: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="6" y1="18" x2="18" y2="6"/></svg>`,
+  zoom: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>`,
+  del: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`,
+  edit: `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>`,
+  calendar: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:3px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
+  gps: `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>`,
+  pin: `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`,
+  tree: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:3px;"><path d="M12 2 7 9h3l-4 6h6v5h2v-5h6l-4-6h3L12 2z"/></svg>`
+};
+
+function renderMarkerPinHtml(type) {
+  const isRien = type === 'rien';
+  return `
+    <div class="marker-pin ${isRien ? 'pin-rien' : 'pin-trouve'}">
+      <div class="marker-pin-head">
+        ${isRien ? ICONS.rien : ICONS.trouve}
+      </div>
+      <div class="marker-pin-stem"></div>
+    </div>
+  `;
+}
+
 export class GestionnaireCarnet {
   constructor(map, gestionnaireGrille) {
     this.map = map;
@@ -105,8 +129,8 @@ export class GestionnaireCarnet {
           ],
           'circle-color': [
             'case',
-            ['==', ['get', 'type'], 'trouve'], '#10b981',
-            '#64748b'
+            ['==', ['get', 'type'], 'trouve'], '#d97736',
+            '#4a6858'
           ],
           'circle-stroke-width': 2,
           'circle-stroke-color': '#ffffff',
@@ -210,7 +234,7 @@ export class GestionnaireCarnet {
     }
 
     this.fermerFabMenu();
-    this.afficherToast('📡 Recherche de la position GPS (haute précision)...');
+    this.afficherToast('Recherche de la position GPS (haute précision)...');
 
     let meilleurePrecision = Infinity;
     let meilleurePosition = null;
@@ -278,7 +302,7 @@ export class GestionnaireCarnet {
       this.map.getCanvas().style.cursor = 'crosshair';
     }
 
-    this.afficherToast('🎯 Pointeur actif : cliquez sur la carte pour déposer votre trouvaille');
+    this.afficherToast('Pointeur actif : cliquez sur la carte pour déposer votre trouvaille');
 
     this._onMapClickPlacement = (e) => {
       this.quitterModePlacement();
@@ -329,7 +353,7 @@ export class GestionnaireCarnet {
 
     // Si précision GPS > 50 m, prévenir l'utilisateur
     if (position.precision_m && position.precision_m > 50) {
-      this.afficherToast(`⚠️ Précision GPS modérée (${position.precision_m} m). Vous pouvez ajuster le marqueur à la main.`);
+      this.afficherToast(`Précision GPS modérée (${position.precision_m} m). Vous pouvez ajuster le marqueur à la main.`);
     }
 
     // Centrer la carte sur le point
@@ -340,7 +364,7 @@ export class GestionnaireCarnet {
 
     const el = document.createElement('div');
     el.className = 'marker-saisie-carnet';
-    el.innerHTML = forceRien ? '🍃' : '🍄';
+    el.innerHTML = renderMarkerPinHtml(forceRien ? 'rien' : 'trouve');
 
     this.markerSaisie = new maplibregl.Marker({ element: el, draggable: true })
       .setLngLat([position.lon, position.lat])
@@ -487,12 +511,12 @@ export class GestionnaireCarnet {
       btnRien?.classList.add('active');
       btnTrouve?.classList.remove('active');
       if (trouveSection) trouveSection.style.display = 'none';
-      if (this.markerSaisie) this.markerSaisie.getElement().innerHTML = '🍃';
+      if (this.markerSaisie) this.markerSaisie.getElement().innerHTML = renderMarkerPinHtml('rien');
     } else {
       btnTrouve?.classList.add('active');
       btnRien?.classList.remove('active');
       if (trouveSection) trouveSection.style.display = 'block';
-      if (this.markerSaisie) this.markerSaisie.getElement().innerHTML = '🍄';
+      if (this.markerSaisie) this.markerSaisie.getElement().innerHTML = renderMarkerPinHtml('trouve');
     }
   }
 
@@ -552,10 +576,10 @@ export class GestionnaireCarnet {
 
     if (this.cueilletteEnEdition?.id) {
       await modifierCueillette(this.cueilletteEnEdition.id, payload);
-      this.afficherToast('✅ Observation modifiée avec succès');
+      this.afficherToast('Observation modifiée avec succès');
     } else {
       await ajouterCueillette(payload);
-      this.afficherToast(type === 'trouve' ? '🍄 Cueillette enregistrée dans votre carnet !' : '🍃 Zone notée "rien trouvé" pour l\'analyse.');
+      this.afficherToast(type === 'trouve' ? 'Cueillette enregistrée dans votre carnet' : 'Zone vide enregistrée dans votre carnet');
     }
 
     this.fermerFormulaire();
@@ -585,14 +609,14 @@ export class GestionnaireCarnet {
     }
 
     const typeBadge = item.type === 'trouve'
-      ? `<span class="cell-badge in-forest" style="background:#10b981; color:#fff;">🍄 ${item.quantite ? item.quantite + ' ex.' : 'Trouvé'}</span>`
-      : `<span class="cell-badge out-forest" style="background:#64748b; color:#fff;">🍃 Rien trouvé</span>`;
+      ? `<span class="cell-badge in-forest" style="background:var(--primary); color:#fff;">Trouvé • ${item.quantite ? item.quantite + ' ex.' : 'Présence'}</span>`
+      : `<span class="cell-badge out-forest" style="background:#4a6858; color:#fff;">Rien trouvé</span>`;
 
     const especeTitre = item.type === 'trouve' ? (item.espece_nom || 'Champignon') : 'Zone sans trouvaille';
     const latinSub = item.espece?.latin ? `<div style="font-style:italic; font-size:0.8rem; color:var(--text-muted); margin-bottom:6px;">${item.espece.latin}</div>` : '';
 
     const milieuBadges = (item.milieu || []).map(m => `<span class="tag-pill">${m}</span>`).join(' ');
-    const arbresBadges = (item.arbres || []).map(a => `<span class="tag-pill tag-arbre">🌳 ${a}</span>`).join(' ');
+    const arbresBadges = (item.arbres || []).map(a => `<span class="tag-pill tag-arbre">${ICONS.tree} ${a}</span>`).join(' ');
 
     const cellSnap = item.cellule ? `
       <div class="parcel-popup-grid" style="margin-top:8px; border-top:1px solid rgba(255,255,255,0.1); padding-top:6px;">
@@ -613,14 +637,14 @@ export class GestionnaireCarnet {
           <div>${typeBadge}</div>
         </div>
         <div style="font-size:0.82rem; color:var(--text-muted); margin-bottom:8px;">
-          📅 ${item.date || ''} ${item.source_position === 'gps' ? '• 📡 GPS' : '• 🗺️ Carte'}
+          ${ICONS.calendar} ${item.date || ''} ${item.source_position === 'gps' ? '• ' + ICONS.gps + ' GPS' : '• ' + ICONS.pin + ' Carte'}
         </div>
         ${item.note ? `<p style="font-size:0.85rem; margin-bottom:8px; background:rgba(0,0,0,0.2); padding:6px; border-radius:4px;">« ${item.note} »</p>` : ''}
         ${arbresBadges || milieuBadges ? `<div style="margin-bottom:6px;">${arbresBadges} ${milieuBadges}</div>` : ''}
         ${cellSnap}
         <div class="popup-actions-row">
-          <button id="btn-edit-popup-${item.id}" class="btn-carnet-sm btn-edit-obs">✏️ Modifier</button>
-          <button id="btn-del-popup-${item.id}" class="btn-carnet-sm btn-danger btn-del-obs">🗑️ Supprimer</button>
+          <button id="btn-edit-popup-${item.id}" class="btn-carnet-sm btn-edit-obs">${ICONS.edit} Modifier</button>
+          <button id="btn-del-popup-${item.id}" class="btn-carnet-sm btn-danger btn-del-obs">${ICONS.del} Supprimer</button>
         </div>
       </div>
     `;
@@ -641,7 +665,7 @@ export class GestionnaireCarnet {
         if (confirm(`Confirmez-vous la suppression de cette observation (${especeTitre} du ${item.date}) ?`)) {
           this.popupActive.remove();
           await supprimerCueillette(item.id);
-          this.afficherToast('🗑️ Observation supprimée.');
+          this.afficherToast('Observation supprimée.');
           await this.rafraichirCoucheCarte();
           if (!this.modalCarnet.classList.contains('hidden')) {
             this.rafraichirListeCarnet();
@@ -692,12 +716,19 @@ export class GestionnaireCarnet {
     if (items.length === 0) {
       listContainer.innerHTML = `
         <div class="carnet-empty-state">
-          <div style="font-size:2.5rem; margin-bottom:8px;">🍄</div>
+          <div class="carnet-empty-icon">
+            <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+              <line x1="9" y1="7" x2="16" y2="7"/>
+              <line x1="9" y1="11" x2="14" y2="11"/>
+            </svg>
+          </div>
           <div style="font-weight:700; font-size:1.05rem; margin-bottom:6px; color:#f8fafc;">Votre carnet est vide</div>
           <p style="font-size:0.9rem; color:#cbd5e1; margin-bottom:12px; line-height:1.4;">
             Ajoutez vos premières cueillettes pour accéder à l'analyse.
           </p>
-          <a href="#" class="btn-lien-milieux-favorables" style="font-size:0.8rem; color:#38bdf8; text-decoration:underline; line-height:1.3; display:inline-block;">
+          <a href="#" class="btn-lien-milieux-favorables" style="font-size:0.8rem; color:#d97736; text-decoration:underline; line-height:1.3; display:inline-block;">
             Pas encore de coin ? Découvrir les milieux favorables d'après les observations naturalistes
           </a>
         </div>
@@ -709,22 +740,21 @@ export class GestionnaireCarnet {
       const isTrouve = item.type === 'trouve';
       const titre = isTrouve ? (item.espece_nom || 'Champignon') : 'Rien trouvé';
       const badgeClass = isTrouve ? 'badge-trouve' : 'badge-rien';
-      const badgeIcon = isTrouve ? '🍄' : '🍃';
       const qText = item.quantite ? `(${item.quantite} spécimens)` : '';
 
       return `
         <div class="carnet-row" data-id="${item.id}" data-lon="${item.lon}" data-lat="${item.lat}">
           <div class="carnet-row-left">
-            <span class="carnet-row-icon ${badgeClass}">${badgeIcon}</span>
+            <span class="carnet-row-icon ${badgeClass}">${isTrouve ? ICONS.trouve : ICONS.rien}</span>
             <div>
               <div class="carnet-row-title">${titre} <span style="font-size:0.75rem; color:var(--text-dim);">${qText}</span></div>
-              <div class="carnet-row-meta">📅 ${item.date || 'Date inconnue'} • ${item.source_position === 'gps' ? 'GPS' : 'Carte'}</div>
+              <div class="carnet-row-meta">${ICONS.calendar} ${item.date || 'Date inconnue'} • ${item.source_position === 'gps' ? ICONS.gps + ' GPS' : ICONS.pin + ' Carte'}</div>
               ${item.note ? `<div class="carnet-row-note">${item.note}</div>` : ''}
             </div>
           </div>
           <div class="carnet-row-actions">
-            <button class="btn-carnet-action btn-row-zoom" title="Voir sur la carte">🎯</button>
-            <button class="btn-carnet-action btn-row-del" title="Supprimer">🗑️</button>
+            <button class="btn-carnet-action btn-row-zoom" title="Voir sur la carte" aria-label="Voir sur la carte">${ICONS.zoom}</button>
+            <button class="btn-carnet-action btn-row-del" title="Supprimer" aria-label="Supprimer">${ICONS.del}</button>
           </div>
         </div>
       `;
@@ -747,7 +777,7 @@ export class GestionnaireCarnet {
         e.stopPropagation();
         if (confirm('Confirmez-vous la suppression de cette observation ?')) {
           await supprimerCueillette(id);
-          this.afficherToast('🗑️ Observation supprimée.');
+          this.afficherToast('Observation supprimée.');
           await this.rafraichirCoucheCarte();
           this.rafraichirListeCarnet();
           incrementerModifsEnAttente();
@@ -907,7 +937,7 @@ export class GestionnaireCarnet {
     }
 
     try {
-      this.afficherToast('🔒 Chiffrement PBKDF2 + AES-GCM 256 bits en cours...');
+      this.afficherToast('Chiffrement PBKDF2 + AES-GCM 256 bits en cours...');
       const mcbJson = await exporterSauvegardeChiffree(pass1);
 
       // Nom de fichier exact meschampis_AAAA-MM-JJ_HHhMM.mcb
@@ -953,7 +983,7 @@ export class GestionnaireCarnet {
         const mcbObj = JSON.parse(mcbJson);
         await definirMeta('dernier_export', mcbObj.cree_le || new Date().toISOString());
         this.modalExport.classList.add('hidden');
-        this.afficherToast(`✅ Sauvegarde chiffrée exportée : ${filename}`);
+        this.afficherToast(`Sauvegarde chiffrée exportée : ${filename}`);
         this.masquerBandeauRappelExport();
         await this.mettreAJourCompteurBadge();
         this.rafraichirStatutStockage();
@@ -985,7 +1015,7 @@ export class GestionnaireCarnet {
     try {
       const file = fileInput.files[0];
       const text = await file.text();
-      this.afficherToast('🔓 Déchiffrement AES-GCM et fusion des données...');
+      this.afficherToast('Déchiffrement AES-GCM et fusion des données...');
 
       const res = await importerSauvegardeChiffree(text, passphrase);
 
@@ -999,7 +1029,7 @@ export class GestionnaireCarnet {
       await this.rafraichirListeCarnet();
       await this.mettreAJourCompteurBadge();
       this.rafraichirStatutStockage();
-      this.afficherToast('✅ Sauvegarde restaurée avec succès !');
+      this.afficherToast('Sauvegarde restaurée avec succès !');
 
       setTimeout(() => {
         this.modalImport.classList.add('hidden');
@@ -1018,6 +1048,7 @@ export class GestionnaireCarnet {
    * Vérifie l'avertissement de sécurité à la première utilisation
    */
   async verifierPremierAvertissement() {
+    if (new URLSearchParams(window.location.search).has('screenshot')) return;
     const vu = await obtenirMeta('avertissement_securite_vu');
     if (!vu) {
       ouvrirModale(this.modalAvertissement);
