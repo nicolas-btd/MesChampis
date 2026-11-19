@@ -163,4 +163,4 @@ if __name__ == "__main__":
     test_dalle_aucun_arbre()
     test_masque_foret_nettoyage()
     test_codes_foret_et_essence()
-    print("\nTous les tests unitaires MNH (Phases B & C) sont validés avec succès !")
+    print("\nTous les tests MNH sont passés.")

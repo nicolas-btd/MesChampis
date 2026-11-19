@@ -4,7 +4,7 @@
  * et la gestion propre du z-index et de l'état d'affichage.
  */
 
-import { droits } from './droits.js';
+import { etatCompte } from './etat_compte.js';
 
 let modaleActive = null;
 
@@ -74,7 +74,7 @@ export function fermerModale(cible) {
     document.body.classList.remove('modal-open');
 
     // Si l'utilisateur n'est pas connecté et qu'on est en mode démo, réafficher le hero d'accueil
-    const d = droits();
+    const d = etatCompte();
     if (!d.connecte && typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('demo') === '1') {
       const hero = document.getElementById('hero-accueil-non-connecte');
       if (hero) hero.classList.remove('hidden');

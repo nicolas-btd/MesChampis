@@ -61,7 +61,7 @@ export class GestionnaireGrille {
     }
     this.u32Plat = (255 << 24) | (COULEUR_PLAT[2] << 16) | (COULEUR_PLAT[1] << 8) | COULEUR_PLAT[0];
     this.u32Ouvert = (170 << 24) | (COULEUR_OUVERT[2] << 16) | (COULEUR_OUVERT[1] << 8) | COULEUR_OUVERT[0];
-    // Teinte ardoise translucide pour les forêts BD Forêt hors zone pilote LiDAR HD (évite la disparition du massif)
+    // Teinte ardoise translucide pour les forêts BD Forêt hors couverture LiDAR HD (évite la disparition du massif)
     this.u32HorsLidar = (100 << 24) | (148 << 16) | (116 << 8) | 100;
 
     // Palette Lisière (0 à 250 m)
@@ -325,8 +325,8 @@ export class GestionnaireGrille {
 
     const cleTuile = `${tx}_${ty}`;
     const tuileMeta = this.manifest?.tuiles_meta ? this.manifest.tuiles_meta[cleTuile] : null;
-    const aLidar = tuileMeta ? Boolean(tuileMeta.mnh) : (couvert !== null);
-    const lidarMillesime = tuileMeta?.lidar_millesime || (aLidar ? 2022 : null);
+    const aLidar = couvert !== null;
+    const lidarMillesime = aLidar ? (tuileMeta?.lidar_millesime ?? null) : null;
 
     return {
       version_grille: this.manifest?.version_grille || '20261031_mnh_pdd_v2',
@@ -361,7 +361,7 @@ export class GestionnaireGrille {
   }
 
   /**
-   * Extrait l'instantané exact d'une cellule selon la spécification B1 du carnet
+   * Extrait l'instantané exact d'une cellule telle qu'enregistrée dans le carnet
    */
   formaterSnapshotCellule(info) {
     if (!info) return null;
@@ -671,7 +671,7 @@ export class GestionnaireGrille {
         if (cVal <= 100) {
           u32[i] = this.paletteCouvert32[cVal];
         } else {
-          // Forêt BD Forêt hors zone pilote LiDAR HD (silhouette conservée)
+          // Forêt BD Forêt hors couverture LiDAR HD (silhouette conservée)
           u32[i] = this.u32HorsLidar;
         }
       }
@@ -683,7 +683,7 @@ export class GestionnaireGrille {
         if (hVal !== 255) {
           u32[i] = this.paletteHauteur32[hVal];
         } else {
-          // Forêt BD Forêt hors zone pilote LiDAR HD (silhouette conservée)
+          // Forêt BD Forêt hors couverture LiDAR HD (silhouette conservée)
           u32[i] = this.u32HorsLidar;
         }
       }
@@ -867,7 +867,7 @@ export class GestionnaireGrille {
       const couvertStr = info.couvert !== null ? `${info.couvert} %` : '—';
       const hauteurStr = info.hauteur !== null ? `${Number(info.hauteur.toFixed(1))} m` : '—';
       const lidarStr = info.aLidar
-        ? `LiDAR HD (${info.lidarMillesime || 2022})`
+        ? (info.lidarMillesime ? `LiDAR HD (${info.lidarMillesime})` : 'LiDAR HD')
         : 'Hors zone LiDAR';
 
       const html = `

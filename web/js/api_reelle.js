@@ -1,6 +1,6 @@
 /**
- * MesChampis — Client API Réelle (Étape 6)
- * Actuellement vide / non disponible : sera implémenté lors du déploiement du vrai serveur.
+ * MesChampis — Client de l'API réelle
+ * Le serveur n'est pas encore implémenté : chaque appel lève une erreur NON_DISPONIBLE.
  */
 
 export class ErreurApi extends Error {
@@ -18,7 +18,7 @@ export class ErreurApi extends Error {
 }
 
 function nonDisponible() {
-  throw new ErreurApi('NON_DISPONIBLE', 'Le serveur réel sera disponible à l\'étape 6.');
+  throw new ErreurApi('NON_DISPONIBLE', 'Le serveur de synchronisation n\'est pas encore disponible.');
 }
 
 export async function inscrire(email, verifMdp, enveloppes) {
@@ -57,28 +57,8 @@ export async function telechargerCarnet() {
   nonDisponible();
 }
 
-export async function droits() {
-  return {
-    connecte: false,
-    email: null,
-    premium: false,
-    essai_debut: null,
-    essai_fin: null,
-    essai_utilise: false,
-    statut_abonnement: 'aucun'
-  };
-}
-
-export async function demarrerEssai() {
-  nonDisponible();
-}
-
-export async function creerSessionPaiement(offre) {
-  nonDisponible();
-}
-
-export async function portailClient() {
-  nonDisponible();
+export async function etatCompte() {
+  return { connecte: false, email: null };
 }
 
 export async function supprimerCompte() {

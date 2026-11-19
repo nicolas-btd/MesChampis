@@ -27,6 +27,8 @@ data/out/*
 web/data/*
 !web/data/.gitkeep
 !web/data/especes.json
+# Tuiles de la grille 25 m (~46 Mo) : versionnées pour que l'appli marche dès le clone
+!web/data/grille/
 
 # Fichiers système et IDE
 .DS_Store

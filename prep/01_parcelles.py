@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Étape 1 : Préparation des données - Fiches écologiques des parcelles forestières
+MesChampis — Fiches écologiques des parcelles forestières
 MesChampis - Webapp non lucrative d'aide à la cueillette de champignons
 
 Ce script :
@@ -176,7 +176,7 @@ def tester_calculs() -> None:
     )
     print(f"  [OK] Test 4 : Plan incliné descendant vers l'Est -> expo = {val_expo_est:.1f}° (attendu ≈ 90°)")
 
-    print("=== Tous les tests de validation ont réussi avec succès ! ===\n")
+    print("=== Tous les tests sont passés ===\n")
 
 
 # ==============================================================================
@@ -409,7 +409,7 @@ def main() -> None:
 
     # Écriture du fichier GeoJSON
     gdf_resultat.to_file(fichier_sortie, driver="GeoJSON")
-    print(f"Export terminé avec succès : {fichier_sortie.relative_to(racine_projet)}")
+    print(f"Export terminé : {fichier_sortie.relative_to(racine_projet)}")
 
     # Affichage du bilan
     print(f"\nNombre total de parcelles exportées : {len(gdf_resultat)}")

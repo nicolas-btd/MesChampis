@@ -1,10 +1,8 @@
 /**
- * MesChampis — Gestionnaire de la Carte de Chaleur de Démonstration (Étape 3 / Démo D5)
+ * MesChampis — Gestionnaire de la carte de chaleur (expérimentale)
  * Utilise un Web Worker dédié pour calculer les scores écologiques cellule par cellule
  * et les projeter sur la carte MapLibre sous la couche des cueillettes.
  */
-
-import { peutVoirRecommandations } from './droits.js';
 
 export class GestionnaireCarteChaleur {
   /**
@@ -42,10 +40,6 @@ export class GestionnaireCarteChaleur {
     const bandeauMention = document.getElementById('mention-chaleur-demo');
 
     if (this.active) {
-      if (!peutVoirRecommandations()) {
-        console.warn('[CarteChaleur] Droits insuffisants (essai ou premium requis).');
-        return false;
-      }
       if (bandeauMention) bandeauMention.classList.remove('hidden');
       await this.calculerEtAfficherToutesTuiles();
       return true;

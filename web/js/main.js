@@ -7,7 +7,6 @@ import { GestionnaireCarte } from './carte.js';
 import { GestionnaireGrille } from './grille.js';
 import { GestionnaireCarnet } from './carnet.js';
 import { ouvrirDB } from './db.js';
-import { droits, peutVoirRecommandations, rafraichirDroits } from './droits.js';
 import { estModeDemo } from './api.js';
 import { GestionnaireCompteUI } from './compte_ui.js';
 import { GestionnaireCarteChaleur } from './carte_chaleur.js';
@@ -78,14 +77,14 @@ function initialiserApp() {
   // 3. Initialisation du carnet de cueillette (IndexedDB local, chiffré)
   const gestionnaireCarnet = new GestionnaireCarnet(gestionnaireCarte.map, gestionnaireGrille);
 
-  // 4. Initialisation de la carte de chaleur (Web Worker D5)
+  // 4. Initialisation de la carte de chaleur (Web Worker)
   const gestionnaireCarteChaleur = new GestionnaireCarteChaleur(gestionnaireCarte.map, gestionnaireGrille);
 
-  // 5. Initialisation du parcours utilisateur et gestion de compte (D4)
+  // 5. Initialisation du parcours utilisateur et gestion de compte
   const gestionnaireCompteUI = new GestionnaireCompteUI(gestionnaireCarnet, gestionnaireGrille);
   gestionnaireCompteUI.demarrer().catch((err) => console.warn('[CompteUI] Erreur demarrage :', err));
 
-  // 6. Initialisation du panneau de démo interactif (D6, actif si ?demo=1)
+  // 6. Initialisation du panneau de démo interactif (actif si ?demo=1)
   const panneauDemo = new PanneauDemo(gestionnaireCarnet, gestionnaireCompteUI, gestionnaireCarteChaleur);
 
   // Exposer les instances sous window.__meschampis uniquement sur localhost / 127.0.0.1 ou avec ?debug=1 / ?demo=1
@@ -109,10 +108,7 @@ function initialiserApp() {
       carnet: gestionnaireCarnet,
       chaleur: gestionnaireCarteChaleur,
       compteUI: gestionnaireCompteUI,
-      modales: { ouvrirModale, fermerModale, fermerToutesModales },
-      droits,
-      peutVoirRecommandations,
-      rafraichirDroits
+      modales: { ouvrirModale, fermerModale, fermerToutesModales }
     };
   }
 
@@ -137,11 +133,6 @@ function initialiserApp() {
 
       const mode = tab.dataset.mode;
       if (mode === 'chaleur') {
-        if (!peutVoirRecommandations()) {
-          // Recommandations verrouillées (gratuit) -> proposer essai 7 jours / abonnement
-          gestionnaireCompteUI.ouvrirOffres();
-          return;
-        }
         modeTabs.forEach((t) => t.classList.remove('active'));
         tab.classList.add('active');
         await gestionnaireCarteChaleur.basculer(true);

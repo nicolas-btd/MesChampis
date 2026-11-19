@@ -1,5 +1,5 @@
 /**
- * MesChampis — Module de synchronisation automatique du carnet (Étape 3 / 6)
+ * MesChampis — Module de synchronisation automatique du carnet
  * Gère le Push/Pull chiffré vers le serveur (simulé ou réel),
  * la résolution de conflit par fusion automatique et l'indicateur d'état.
  */
@@ -54,7 +54,7 @@ export async function synchroniserCarnet() {
   // Vérifier si connecté
   let d = null;
   try {
-    d = await api.droits();
+    d = await api.etatCompte();
   } catch {
     notifierStatutSync('hors_ligne', 'Réseau indisponible');
     return { succes: false, statut: 'hors_ligne' };
@@ -91,13 +91,9 @@ export async function synchroniserCarnet() {
       }
     }
 
-    const essai_utilise = await obtenirMeta('essai_utilise');
     const contribution_autorisee = await obtenirMeta('contribution_autorisee');
 
     const metas = [];
-    if (essai_utilise !== null && essai_utilise !== undefined) {
-      metas.push({ id: 'essai_utilise', valeur: essai_utilise });
-    }
     if (contribution_autorisee !== null && contribution_autorisee !== undefined) {
       metas.push({ id: 'contribution_autorisee', valeur: contribution_autorisee });
     }
@@ -154,10 +150,8 @@ async function resoudreConflitEtRenvoyer(cueillettesLocales, cleMaitre) {
     // Le serveur n'a pas de carnet enregistré (version 0).
     // Réinitialiser la version serveur locale à 0 pour casser toute boucle de conflit.
     await definirMeta('version_carnet_serveur', 0);
-    const essai_utilise = await obtenirMeta('essai_utilise');
     const contribution_autorisee = await obtenirMeta('contribution_autorisee');
     const metas = [];
-    if (essai_utilise !== null && essai_utilise !== undefined) metas.push({ id: 'essai_utilise', valeur: essai_utilise });
     if (contribution_autorisee !== null && contribution_autorisee !== undefined) metas.push({ id: 'contribution_autorisee', valeur: contribution_autorisee });
     const payload = {
       cueillettes: cueillettesLocales,
@@ -201,11 +195,9 @@ async function resoudreConflitEtRenvoyer(cueillettesLocales, cleMaitre) {
 
   // Préparer la liste consolidée
   const cueillettesConsolidees = Array.from(mapLocales.values());
-  const essai_utilise = await obtenirMeta('essai_utilise');
   const contribution_autorisee = await obtenirMeta('contribution_autorisee');
 
   const metas = [];
-  if (essai_utilise !== null && essai_utilise !== undefined) metas.push({ id: 'essai_utilise', valeur: essai_utilise });
   if (contribution_autorisee !== null && contribution_autorisee !== undefined) metas.push({ id: 'contribution_autorisee', valeur: contribution_autorisee });
 
   const payloadConsolide = {
@@ -230,7 +222,7 @@ async function resoudreConflitEtRenvoyer(cueillettesLocales, cleMaitre) {
  * Récupère le carnet complet depuis le serveur (Pull complet, ex: après reconnexion ou téléphone perdu)
  */
 export async function restaurerDepuisServeur() {
-  const d = await api.droits();
+  const d = await api.etatCompte();
   if (!d || !d.connecte) throw new Error('Connexion requise');
 
   const cleMaitre = obtenirCleMaitreSession();

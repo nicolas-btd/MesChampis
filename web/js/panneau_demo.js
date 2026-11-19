@@ -1,12 +1,12 @@
 /**
- * MesChampis — Panneau de Démonstration Interactif (Étape 3 / Démo D6)
+ * MesChampis — Panneau de démonstration (?demo=1)
  * Accessible uniquement lorsque l'URL contient '?demo=1'.
  * Permet de manipuler la date virtuelle, simuler la perte de réseau, inspecter
  * la boîte de réception des e-mails, injecter des données fictives et tester le scénario "Téléphone perdu".
  */
 
 import { estModeDemo, serveurSimuleControl } from './api.js';
-import { rafraichirDroits, definirDroitsMemoire } from './droits.js';
+import { rafraichirEtatCompte } from './etat_compte.js';
 import { ajouterCueillette, viderBase, listerCueillettes } from './db.js';
 import { purgerCleMaitreSession } from './crypto_compte.js';
 import { synchroniserCarnet, restaurerDepuisServeur } from './sync_carnet.js';
@@ -29,7 +29,7 @@ export class PanneauDemo {
   }
 
   construirePanneau() {
-    // 1. Bouton flottant sobre & élégant
+    // 1. Bouton flottant
     const btn = document.createElement('button');
     btn.id = 'btn-toggle-panneau-demo';
     btn.className = 'btn-flottant-demo';
@@ -69,19 +69,7 @@ export class PanneauDemo {
           <div id="demo-date-affichee" class="demo-date-badge"></div>
         </div>
 
-        <!-- 3. État du Compte / Droits -->
-        <div class="demo-section">
-          <h4>État du Compte</h4>
-          <div class="demo-buttons-grid">
-            <button class="btn-demo-action" id="btn-statut-gratuit">Gratuit</button>
-            <button class="btn-demo-action" id="btn-statut-essai">Essai 7j actif</button>
-            <button class="btn-demo-action" id="btn-statut-essai-fini">Essai expiré</button>
-            <button class="btn-demo-action" id="btn-statut-abonne">Abonné</button>
-            <button class="btn-demo-action" id="btn-statut-refuse">Paiement refusé</button>
-          </div>
-        </div>
-
-        <!-- 4. Boîte de réception e-mails simulée -->
+        <!-- 3. Boîte de réception e-mails simulée -->
         <div class="demo-section">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
             <h4>Boîte E-mails simulée (<span id="demo-emails-count">0</span>)</h4>
@@ -92,7 +80,7 @@ export class PanneauDemo {
           </div>
         </div>
 
-        <!-- 5. Jeu de Données Carnet -->
+        <!-- 4. Jeu de Données Carnet -->
         <div class="demo-section">
           <h4>Données du Carnet</h4>
           <div class="demo-buttons-grid">
@@ -101,7 +89,7 @@ export class PanneauDemo {
           </div>
         </div>
 
-        <!-- 6. Scénarios Avancés -->
+        <!-- 5. Scénarios Avancés -->
         <div class="demo-section">
           <h4>Scénarios de Test</h4>
           <div class="demo-buttons-grid">
@@ -176,42 +164,11 @@ export class PanneauDemo {
       const decalage = (cur.getTime() + 7.5 * 86400000) - Date.now();
       serveurSimuleControl.definirDecalageDateVirtuelle(decalage);
       this.actualiserAffichageDate();
-      await rafraichirDroits();
-      this.carnet?.afficherToast('Date avancée de +7 jours (essai de 7j expiré)');
+      await rafraichirEtatCompte();
+      this.carnet?.afficherToast('Date avancée de 7 jours');
     });
 
-    // 3. Forcer statut de compte
-    document.getElementById('btn-statut-gratuit')?.addEventListener('click', () => {
-      definirDroitsMemoire({ premium: false, essai_debut: null, essai_fin: null, essai_actif: false, essai_utilise: false, statut_abonnement: 'aucun' });
-      this.carnet?.afficherToast('Droits : Compte Gratuit');
-    });
-
-    document.getElementById('btn-statut-essai')?.addEventListener('click', () => {
-      const debut = serveurSimuleControl.dateVirtuelle();
-      const fin = new Date(debut.getTime() + 7 * 86400000);
-      definirDroitsMemoire({ premium: false, essai_debut: debut.toISOString(), essai_fin: fin.toISOString(), essai_actif: true, essai_utilise: true, statut_abonnement: 'essai' });
-      this.carnet?.afficherToast('Droits : Essai 7 jours activé');
-    });
-
-    document.getElementById('btn-statut-essai-fini')?.addEventListener('click', () => {
-      const debut = new Date(Date.now() - 10 * 86400000);
-      const fin = new Date(Date.now() - 3 * 86400000);
-      definirDroitsMemoire({ premium: false, essai_debut: debut.toISOString(), essai_fin: fin.toISOString(), essai_actif: false, essai_utilise: true, statut_abonnement: 'essai_expire' });
-      this.carnet?.afficherToast('Droits : Essai expiré (Offres affichées)');
-    });
-
-    document.getElementById('btn-statut-abonne')?.addEventListener('click', () => {
-      const fin = new Date(Date.now() + 365 * 86400000);
-      definirDroitsMemoire({ premium: true, premium_fin: fin.toISOString(), statut_abonnement: 'actif' });
-      this.carnet?.afficherToast('Droits : Abonné Premium (Annuel)');
-    });
-
-    document.getElementById('btn-statut-refuse')?.addEventListener('click', () => {
-      definirDroitsMemoire({ premium: false, statut_abonnement: 'paiement_refuse' });
-      this.carnet?.afficherToast('Droits : Paiement refusé');
-    });
-
-    // 4. E-mails
+    // 3. E-mails
     document.getElementById('btn-purger-emails')?.addEventListener('click', async () => {
       await serveurSimuleControl.purgerEmailsSimules();
       this.rafraichirBoiteEmails();
@@ -221,7 +178,7 @@ export class PanneauDemo {
       this.rafraichirBoiteEmails();
     });
 
-    // 5. Données carnet
+    // 4. Données carnet
     document.getElementById('btn-remplir-carnet-10')?.addEventListener('click', () => this.injecter10Cueillettes());
     document.getElementById('btn-vider-carnet-demo')?.addEventListener('click', async () => {
       await viderBase();
@@ -229,7 +186,7 @@ export class PanneauDemo {
       this.carnet?.afficherToast('Carnet local vidé.');
     });
 
-    // 6. Scénarios
+    // 5. Scénarios
     document.getElementById('btn-scenario-tel-perdu')?.addEventListener('click', () => this.executerScenarioTelephonePerdu());
     document.getElementById('btn-scenario-reset-tout')?.addEventListener('click', () => this.executerResetTotal());
   }
@@ -285,7 +242,7 @@ export class PanneauDemo {
             await import('./api.js').then((m) => m.verifierEmail(jeton));
             this.carnet?.afficherToast('E-mail vérifié avec succès ! Compte activé.');
             this.panneauElem?.classList.add('hidden');
-            await rafraichirDroits();
+            await rafraichirEtatCompte();
             if (this.compteUI) this.compteUI.afficherEcranNonConnecte(false);
           } catch (err) {
             alert('Erreur vérification : ' + err.message);
@@ -354,8 +311,8 @@ export class PanneauDemo {
     const decalage = (cur.getTime() + 7.5 * 86400000) - Date.now();
     serveurSimuleControl.definirDecalageDateVirtuelle(decalage);
     this.actualiserAffichageDate();
-    await rafraichirDroits();
-    this.carnet?.afficherToast('Date avancée de +7 jours (essai expiré)');
+    await rafraichirEtatCompte();
+    this.carnet?.afficherToast('Date avancée de 7 jours');
   }
 
   /**
@@ -372,7 +329,7 @@ export class PanneauDemo {
     await viderBase();
     purgerCleMaitreSession();
     await import('./api.js').then((m) => m.deconnecter());
-    await rafraichirDroits();
+    await rafraichirEtatCompte();
 
     if (this.carnet) await this.carnet.chargerCueillettes();
     if (this.compteUI) this.compteUI.afficherEcranNonConnecte(true);
@@ -397,7 +354,7 @@ export class PanneauDemo {
     purgerCleMaitreSession();
     serveurSimuleControl.definirDecalageDateVirtuelle(0);
     serveurSimuleControl.definirReseauCoupe(false);
-    await rafraichirDroits();
+    await rafraichirEtatCompte();
 
     if (this.carnet) await this.carnet.chargerCueillettes();
     if (this.compteUI) this.compteUI.afficherEcranNonConnecte(true);

@@ -185,7 +185,7 @@ export async function demanderPersistance(nomBase = nomBaseDefaut) {
 }
 
 /**
- * Ajoute une observation de cueillette conforme au modèle B1
+ * Ajoute une observation de cueillette dans IndexedDB
  * @param {object} donnee
  * @param {string} [nomBase]
  * @returns {Promise<object>} L'enregistrement complet créé
@@ -584,10 +584,10 @@ export async function exporterSauvegardeChiffree(passphrase, nomBase = nomBaseDe
   const db = await ouvrirBase(nomBase);
   const cueillettes = await listerCueillettes({}, nomBase);
 
-  // C8. Filtrer strictement les métadonnées exportées
-  // À EXPORTER : essai_utilise, contribution_autorisee
+  // Filtrer strictement les métadonnées exportées
+  // À EXPORTER : contribution_autorisee
   // À NE PAS EXPORTER : dernier_export, compteur, messages vus, état persist
-  const CLES_META_EXPORTABLES = new Set(['essai_utilise', 'contribution_autorisee']);
+  const CLES_META_EXPORTABLES = new Set(['contribution_autorisee']);
   const metasBrutes = await new Promise((resolve) => {
     const tx = db.transaction('meta', 'readonly');
     const store = tx.objectStore('meta');
@@ -624,16 +624,11 @@ export async function importerSauvegardeChiffree(mcbJsonText, passphrase, nomBas
 
   const db = await ouvrirBase(nomBase);
 
-  // C8. Restauration des métadonnées : essai_utilise est recopié s'il est présent et jamais effacé
+  // Restauration des métadonnées (sans écraser un choix local existant)
   if (Array.isArray(payload.meta)) {
     for (const m of payload.meta) {
       if (!m || !m.id) continue;
-      if (m.id === 'essai_utilise') {
-        const local = await obtenirMeta('essai_utilise', nomBase);
-        if (m.valeur === true || (m.valeur !== undefined && local !== true)) {
-          await definirMeta('essai_utilise', Boolean(m.valeur), nomBase);
-        }
-      } else if (m.id === 'contribution_autorisee') {
+      if (m.id === 'contribution_autorisee') {
         const local = await obtenirMeta('contribution_autorisee', nomBase);
         if (local === null && m.valeur !== undefined) {
           await definirMeta('contribution_autorisee', Boolean(m.valeur), nomBase);

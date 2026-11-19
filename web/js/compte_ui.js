@@ -1,12 +1,12 @@
 /**
- * MesChampis — Interface Utilisateur du parcours utilisateur & gestion de compte (Étape 3 / 6)
+ * MesChampis — Interface du compte utilisateur
  * Gère l'ensemble des modales : Accueil non connecté, Inscription, Connexion,
- * Code de secours, Mot de passe oublié (3 cas), Paiement Stripe factice, Réglages et Milieux favorables.
+ * Code de secours, Mot de passe oublié (3 cas), Réglages et Milieux favorables.
  */
 
 import * as api from './api.js';
-import { estModeDemo, serveurSimuleControl } from './api.js';
-import { rafraichirDroits, droits, peutVoirRecommandations } from './droits.js';
+import { estModeDemo } from './api.js';
+import { rafraichirEtatCompte, etatCompte } from './etat_compte.js';
 import {
   genererCodeSecours,
   creerTrousseauInscription,
@@ -18,7 +18,7 @@ import {
   purgerCleMaitreSession
 } from './crypto_compte.js';
 import { synchroniserCarnet, restaurerDepuisServeur, notifierStatutSync } from './sync_carnet.js';
-import { listerCueillettes, viderBase, ouvrirBase, obtenirMeta, definirMeta } from './db.js';
+import { listerCueillettes, viderBase, ouvrirBase, obtenirMeta } from './db.js';
 import { ouvrirModale, fermerModale, fermerToutesModales } from './modales.js';
 
 export class GestionnaireCompteUI {
@@ -45,10 +45,8 @@ export class GestionnaireCompteUI {
     this.modalAuth = document.getElementById('modal-auth');
     this.modalCodeSecours = document.getElementById('modal-code-secours');
     this.modalMdpOublie = document.getElementById('modal-mdp-oublie');
-    this.modalPaiement = document.getElementById('modal-paiement-stripe');
     this.modalReglages = document.getElementById('modal-reglages-compte');
     this.modalMilieux = document.getElementById('modal-milieux-favorables');
-    this.modalOffres = document.getElementById('modal-offres-abonnement');
 
     // Boutons de navigation header
     this.btnNavCompte = document.getElementById('btn-nav-compte');
@@ -58,7 +56,7 @@ export class GestionnaireCompteUI {
   attacherEvenements() {
     // 1. Bouton compte / réglages dans l'en-tête
     this.btnNavCompte?.addEventListener('click', () => {
-      const d = droits();
+      const d = etatCompte();
       if (d.connecte) {
         this.ouvrirReglages();
       } else {
@@ -99,21 +97,11 @@ export class GestionnaireCompteUI {
     // 7. Mot de passe oublié
     document.getElementById('btn-submit-mdp-oublie')?.addEventListener('click', () => this.lancerRecuperationMdp());
 
-    // 8. Paiement factice Stripe
-    document.getElementById('btn-pay-stripe-success')?.addEventListener('click', () => this.simulerPaiement(true));
-    document.getElementById('btn-pay-stripe-fail')?.addEventListener('click', () => this.simulerPaiement(false));
-
-    // 9. Réglages
+    // 8. Réglages
     document.getElementById('btn-reglages-deconnexion')?.addEventListener('click', () => this.deconnecter());
     document.getElementById('btn-reglages-supprimer-compte')?.addEventListener('click', () => this.confirmerSupprimerCompte());
-    document.getElementById('btn-reglages-abonnement')?.addEventListener('click', () => this.ouvrirOffres());
 
-    // 10. Boutons d'offre / essai
-    document.getElementById('btn-demarrer-essai-7j')?.addEventListener('click', () => this.lancerDemarrageEssai());
-    document.getElementById('btn-souscrire-pass-saison')?.addEventListener('click', () => this.ouvrirPaiement('pass_saison'));
-    document.getElementById('btn-souscrire-annuel')?.addEventListener('click', () => this.ouvrirPaiement('annuel'));
-
-    // 11. Liens milieux favorables (observations naturalistes)
+    // 9. Liens milieux favorables (observations naturalistes)
     document.addEventListener('click', (e) => {
       if (e.target.closest('.btn-lien-milieux-favorables')) {
         e.preventDefault();
@@ -125,11 +113,6 @@ export class GestionnaireCompteUI {
     window.addEventListener('meschampis:sync-statut', (e) => {
       this.mettreAJourBadgeSync(e.detail);
     });
-
-    // Écouter les modifications de droits depuis le panneau démo ou webhook
-    window.addEventListener('meschampis:droits-actualises', (e) => {
-      this.mettreAJourInterfaceDroits(e.detail);
-    });
   }
 
   /**
@@ -139,8 +122,8 @@ export class GestionnaireCompteUI {
     if (estModeDemo()) {
       if (this.bannerDemo) this.bannerDemo.classList.remove('hidden');
 
-      // Vérifier les droits du serveur simulé
-      const d = await rafraichirDroits();
+      // Vérifier la session sur le serveur simulé
+      const d = await rafraichirEtatCompte();
       if (!d.connecte) {
         this.afficherEcranNonConnecte(true);
       } else {
@@ -269,7 +252,7 @@ export class GestionnaireCompteUI {
     fermerModale(this.modalCodeSecours);
     this.carnet?.afficherToast('Code de secours validé et mémorisé.');
 
-    // Afficher l'avertissement sanitaire obligatoire (D4.2)
+    // Afficher l'avertissement sanitaire
     const modalSanitaire = document.getElementById('modal-avertissement-sanitaire');
     if (modalSanitaire) {
       ouvrirModale(modalSanitaire);
@@ -309,7 +292,7 @@ export class GestionnaireCompteUI {
 
       fermerModale(this.modalAuth);
       this.afficherEcranNonConnecte(false);
-      await rafraichirDroits();
+      await rafraichirEtatCompte();
 
       this.carnet?.afficherToast(`Bienvenue, ${email} !`);
 
@@ -326,7 +309,7 @@ export class GestionnaireCompteUI {
     await api.deconnecter();
     purgerCleMaitreSession();
     this.fermerToutesModales();
-    await rafraichirDroits();
+    await rafraichirEtatCompte();
     this.afficherEcranNonConnecte(true);
     this.carnet?.afficherToast('Vous êtes maintenant déconnecté.');
   }
@@ -347,7 +330,7 @@ export class GestionnaireCompteUI {
     if (action === 'verifier-email' && jeton) {
       await api.verifierEmail(jeton);
       this.carnet?.afficherToast('E-mail vérifié avec succès ! Compte activé.');
-      await rafraichirDroits();
+      await rafraichirEtatCompte();
       this.afficherEcranNonConnecte(false);
     }
   }
@@ -437,99 +420,11 @@ export class GestionnaireCompteUI {
   }
 
   // ---------------------------------------------------------------------------
-  // Essai de 7 jours & Offres
-  // ---------------------------------------------------------------------------
-  async lancerDemarrageEssai() {
-    try {
-      const res = await api.demarrerEssai();
-      await rafraichirDroits();
-      await definirMeta('essai_utilise', true);
-
-      this.fermerToutesModales();
-      this.carnet?.afficherToast('Essai gratuit de 7 jours activé avec succès !');
-
-      // Déverrouiller la vue recommandations et activer la carte de chaleur
-      if (window.activerCarteChaleurDemo) {
-        window.activerCarteChaleurDemo();
-      }
-    } catch (err) {
-      alert(err.message || 'Impossible de démarrer l\'essai.');
-    }
-  }
-
-  ouvrirOffres() {
-    ouvrirModale(this.modalOffres);
-  }
-
-  // ---------------------------------------------------------------------------
-  // Paiement factice Stripe (Imitation)
-  // ---------------------------------------------------------------------------
-  ouvrirPaiement(offre = 'pass_saison') {
-    const d = droits();
-    if (!d.connecte) {
-      this.ouvrirConnexion();
-      return;
-    }
-
-    const titleElem = document.getElementById('stripe-recap-titre');
-    const priceElem = document.getElementById('stripe-recap-prix');
-
-    if (offre === 'pass_saison') {
-      if (titleElem) titleElem.textContent = 'Pass Saison Automne 2026';
-      if (priceElem) priceElem.textContent = '29,00 € TTC';
-    } else {
-      if (titleElem) titleElem.textContent = 'Abonnement Annuel MesChampis';
-      if (priceElem) priceElem.textContent = '49,00 € TTC / an';
-    }
-
-    ouvrirModale(this.modalPaiement);
-  }
-
-  async simulerPaiement(succes = true) {
-    const errBox = document.getElementById('stripe-payment-error');
-    if (errBox) errBox.textContent = '';
-
-    const d = droits();
-    if (!d.email) return;
-
-    if (succes) {
-      // Déclencher le webhook simulé succès
-      await serveurSimuleControl.simulerWebhookPaiement(d.email, 'succes', 12);
-      await rafraichirDroits();
-
-      fermerModale(this.modalPaiement);
-      this.carnet?.afficherToast('Paiement confirmé ! Votre accès Premium est actif pour 12 mois.');
-
-      if (window.activerCarteChaleurDemo) {
-        window.activerCarteChaleurDemo();
-      }
-    } else {
-      // Déclencher le webhook simulé échec
-      await serveurSimuleControl.simulerWebhookPaiement(d.email, 'refuse');
-      await rafraichirDroits();
-      if (errBox) {
-        errBox.textContent = 'Votre carte a été refusée par la banque émettrice (fonds insuffisants ou simulation de refus).';
-      }
-    }
-  }
-
-  // ---------------------------------------------------------------------------
   // Réglages du compte
   // ---------------------------------------------------------------------------
   async ouvrirReglages() {
-    const d = await rafraichirDroits();
+    const d = await rafraichirEtatCompte();
     document.getElementById('reglages-email-val').textContent = d.email || 'Non connecté';
-
-    let statutTexte = 'Compte gratuit';
-    if (d.premium) {
-      statutTexte = 'Abonné Premium (accès illimité)';
-    } else if (d.essai_actif) {
-      statutTexte = `Essai gratuit 7 jours en cours (fin le ${new Date(d.essai_fin).toLocaleDateString()})`;
-    } else if (d.essai_utilise) {
-      statutTexte = 'Essai gratuit terminé';
-    }
-
-    document.getElementById('reglages-statut-abonnement').textContent = statutTexte;
     ouvrirModale(this.modalReglages);
   }
 
@@ -547,7 +442,7 @@ export class GestionnaireCompteUI {
     purgerCleMaitreSession();
     await viderBase(); // vider meschampis_db_demo
     this.fermerToutesModales();
-    await rafraichirDroits();
+    await rafraichirEtatCompte();
     this.afficherEcranNonConnecte(true);
     this.carnet?.afficherToast('Compte et données locales purgés avec succès.');
     if (this.carnet) this.carnet.chargerCueillettes();
@@ -579,19 +474,6 @@ export class GestionnaireCompteUI {
     } else if (statut === 'sync_en_cours') {
       this.badgeSync.className = 'sync-badge sync-active';
       this.badgeSync.innerHTML = '<span class="sync-dot sync-pulsing"></span><span class="sync-label-text">Synchronisation...</span>';
-    }
-  }
-
-  mettreAJourInterfaceDroits(droits) {
-    // Si abonné ou essai actif, déverrouiller la vue recommandations
-    const aDroit = peutVoirRecommandations();
-    const lockOverlay = document.getElementById('recommandations-lock-overlay');
-    if (lockOverlay) {
-      if (aDroit) {
-        lockOverlay.classList.add('hidden');
-      } else {
-        lockOverlay.classList.remove('hidden');
-      }
     }
   }
 }

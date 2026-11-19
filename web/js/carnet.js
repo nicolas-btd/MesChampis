@@ -947,7 +947,7 @@ export class GestionnaireCarnet {
 
       let exportReussi = false;
 
-      // C7. Partage via Web Share API si supporté (iPhone : Enregistrer dans Fichiers -> iCloud Drive)
+      // Partage via Web Share API si supporté (iPhone : Enregistrer dans Fichiers -> iCloud Drive)
       if (typeof navigator !== 'undefined' && navigator.canShare?.({ files: [fichier] })) {
         try {
           await navigator.share({

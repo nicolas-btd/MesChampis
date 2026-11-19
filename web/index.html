@@ -957,112 +957,6 @@
     </div>
   </div>
 
-  <!-- Modale Offres & Abonnement (Fin d'essai) -->
-  <div id="modal-offres-abonnement" class="modal-backdrop hidden">
-    <div class="modal-card modal-offres-card">
-      <div class="modal-header">
-        <h2>Recommandations Écologiques & Cartes de Chaleur</h2>
-        <button class="btn-modal-close btn-close-compte-modal" type="button" aria-label="Fermer (Échap)" title="Fermer (Échap)">&times;</button>
-      </div>
-      <div class="modal-body">
-        <p class="offres-intro">
-          Visualisez les zones forestières les plus favorables du Puy-de-Dôme grâce à l'analyse fine LiDAR HD et BD Forêt.
-        </p>
-
-        <!-- Essai gratuit de 7 jours (si non utilisé) -->
-        <div id="bloc-essai-7j" class="bloc-essai-box">
-          <div class="essai-badge">7 jours offerts</div>
-          <h3>Essai gratuit sans engagement</h3>
-          <p>Testez toutes les fonctionnalités premium (cartes de chaleur, météo locale) pendant 7 jours.</p>
-          <button id="btn-demarrer-essai-7j" class="btn-primary btn-large full-width" type="button">
-            Démarrer mon essai gratuit de 7 jours
-          </button>
-        </div>
-
-        <div class="offres-separator">
-          <span>OU CHOISISSEZ UNE FORMULE</span>
-        </div>
-
-        <div class="offres-grid">
-          <!-- Pass Saison -->
-          <div class="offre-card">
-            <div class="offre-badge">Saison Automne</div>
-            <h4>Pass Saison</h4>
-            <div class="offre-price">29 € <span>TTC</span></div>
-            <p class="offre-desc">Accès complet jusqu'à la fin de la saison mycologique en cours.</p>
-            <ul class="offre-points">
-              <li><span class="offre-check-icon"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span> Carte de chaleur départementale</li>
-              <li><span class="offre-check-icon"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span> Sauvegarde chiffrée illimitée</li>
-              <li><span class="offre-check-icon"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span> Météo et biotopes forestiers</li>
-            </ul>
-            <button id="btn-souscrire-pass-saison" class="btn-secondary full-width" type="button">Choisir le Pass Saison</button>
-          </div>
-
-          <!-- Annuel -->
-          <div class="offre-card offre-card-featured">
-            <div class="offre-badge badge-popular">Recommandé</div>
-            <h4>Abonnement Annuel</h4>
-            <div class="offre-price">49 € <span>/ an</span></div>
-            <p class="offre-desc">Toutes les saisons : morilles de printemps et bolets d'automne.</p>
-            <ul class="offre-points">
-              <li><span class="offre-check-icon"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span> Toutes saisons (12 mois)</li>
-              <li><span class="offre-check-icon"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span> Carte de chaleur temps réel</li>
-              <li><span class="offre-check-icon"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span> Support prioritaire</li>
-            </ul>
-            <button id="btn-souscrire-annuel" class="btn-primary full-width" type="button">Choisir l'Annuel</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modale Paiement factice Stripe -->
-  <div id="modal-paiement-stripe" class="modal-backdrop hidden">
-    <div class="modal-card modal-stripe-card">
-      <div class="stripe-top-bar">
-        <div class="stripe-logo"><strong>Stripe</strong> <span class="stripe-mode-badge">Simulation Test</span></div>
-        <button class="btn-modal-close btn-close-compte-modal" type="button" aria-label="Fermer (Échap)" title="Fermer (Échap)">&times;</button>
-      </div>
-      <div class="modal-body stripe-body">
-        <div class="stripe-recap">
-          <div style="font-size:0.85rem; color: #64748b;">MesChampis SARL</div>
-          <h3 id="stripe-recap-titre" style="margin: 0.25rem 0; font-size:1.25rem; color:#0f172a;">Pass Saison Automne 2026</h3>
-          <div id="stripe-recap-prix" style="font-size:1.8rem; font-weight:800; color:#0f172a;">29,00 €</div>
-        </div>
-
-        <div class="stripe-form">
-          <div class="form-group">
-            <label class="form-label" style="color:#334155;">Informations de carte bancaire</label>
-            <div class="stripe-fake-input">
-              <span class="stripe-card-icon">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="2" y="5" width="20" height="14" rx="2"/>
-                  <line x1="2" y1="10" x2="22" y2="10"/>
-                </svg>
-              </span>
-              <input type="text" class="form-input stripe-input" value="4242 •••• •••• 4242" readonly>
-            </div>
-          </div>
-          <div style="display:flex; gap:0.5rem;">
-            <input type="text" class="form-input stripe-input" value="12 / 28" readonly style="flex:1;">
-            <input type="text" class="form-input stripe-input" value="123" readonly style="width:80px;">
-          </div>
-
-          <div id="stripe-payment-error" class="crypto-error" style="margin-top:0.75rem;"></div>
-
-          <div class="stripe-buttons-stack" style="margin-top:1.25rem; display:flex; flex-direction:column; gap:0.75rem;">
-            <button id="btn-pay-stripe-success" class="btn-stripe-pay" type="button">
-              Régler la commande
-            </button>
-            <button id="btn-pay-stripe-fail" class="btn-stripe-fail" type="button">
-              Simuler un refus de carte
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- Modale Réglages Compte -->
   <div id="modal-reglages-compte" class="modal-backdrop hidden">
     <div class="modal-card modal-reglages-card">
@@ -1075,15 +969,8 @@
           <div class="reglages-item-label">Adresse e-mail :</div>
           <div id="reglages-email-val" class="reglages-item-val">demo@meschampis.fr</div>
         </div>
-        <div class="reglages-item">
-          <div class="reglages-item-label">Statut abonnement :</div>
-          <div id="reglages-statut-abonnement" class="reglages-item-val">Compte gratuit</div>
-        </div>
 
         <div class="reglages-actions-list">
-          <button id="btn-reglages-abonnement" class="btn-reglages-action" type="button">
-            Gérer mon abonnement / Débloquer le Premium
-          </button>
           <button id="btn-reglages-deconnexion" class="btn-reglages-action" type="button">
             Se déconnecter
           </button>
@@ -1095,7 +982,7 @@
     </div>
   </div>
 
-  <!-- Modale Milieux Favorables (Factice Étape 4 bis) -->
+  <!-- Modale Milieux Favorables (fonctionnalité à venir) -->
   <div id="modal-milieux-favorables" class="modal-backdrop hidden">
     <div class="modal-card modal-milieux-card">
       <div class="modal-header">
@@ -1110,7 +997,7 @@
             <path d="M2 12h20"></path>
           </svg>
         </div>
-        <h3>Bientôt disponible — Étape 4 bis</h3>
+        <h3>Bientôt disponible</h3>
         <p>
           Pour les cueilleurs démarrant sans coin connu, MesChampis intégrera les données naturalistes publiques ouvertes (OpenObs, GBIF sous licences CC0 / CC BY).
         </p>

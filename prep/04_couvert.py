@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-MesChampis — Phase B : Téléchargement et agrégation dalle par dalle du MNH LiDAR HD
+MesChampis — Téléchargement et agrégation dalle par dalle du MNH LiDAR HD
 Support multi-massifs et grille départementale Puy-de-Dôme (4352 x 5120 cellules 25 m).
 
 Ce script :
 1. Charge data/raw/mnh/inventaire.json (support filtrage par massif).
 2. Télécharge les dalles 1 km MNH en multi-threading avec reprise sur incident.
 3. Agrège les pixels 50 cm en cellules 25 m (couvert % et hauteur p90).
-4. Supprime la dalle brute après agrégation (--supprimer-brut, par défaut).
+4. Supprime la dalle brute après agrégation (sauf avec --garder-brut).
 5. Met à jour data/out/mnh_couvert.tif et data/out/mnh_hauteur.tif au fur et à mesure.
 6. Maintient data/raw/mnh/journal_dalles.json pour reprise sans doublon.
 """
@@ -22,18 +22,14 @@ import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from threading import Lock
+from threading import RLock
 
 import numpy as np
 import rasterio
 from rasterio.transform import Affine
 import requests
 
-# Constantes obligatoires
-SEUIL_ARBRE = 3.0          # Hauteur min en mètres pour compter comme arbre
-SEUIL_COUVERT_FORET = 50  # % min de couvert pour définir une cellule forêt
-MIN_CELLULES_FORET = 8    # Taille min d'un massif (8-connexité)
-MAX_TROU_REBOUCHE = 2     # Taille max d'une trouée rebouchée (cellules)
+SEUIL_ARBRE = 3.0  # Hauteur min (m) pour qu'un pixel MNH compte comme arbre
 
 # Grille départementale Puy-de-Dôme
 ORIGIN_X = 652025.0
@@ -92,7 +88,7 @@ def aggreger_blocs_dalle(
 def telecharger_dalle(url: str, dest_path: Path, max_retries: int = 4) -> bool:
     """Télécharge une dalle avec reprises exponentielles en cas d'erreur ou limitation."""
     temp_path = dest_path.with_suffix(".tmp")
-    headers = {"User-Agent": "MesChampis-Bot/2.0 (IGN Open Data Processing; +https://data.geopf.fr)"}
+    headers = {"User-Agent": "MesChampis/1.0 (pipeline de traitement LiDAR HD)"}
 
     for tentative in range(1, max_retries + 1):
         try:
@@ -202,8 +198,7 @@ def main():
     parser.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR)
     parser.add_argument("--raw-dir", type=Path, default=DEFAULT_RAW_DIR)
     parser.add_argument("--massif", type=str, default=None, choices=["puys", "sancy", "livradois", "forez_nord", "partie1", "partie2", "partie3", "partie4", "principaux", None], help="Filtrer sur un massif spécifique")
-    parser.add_argument("--supprimer-brut", action="store_true", default=True, help="Supprimer la dalle brute après agrégation")
-    parser.add_argument("--garder-brut", dest="supprimer_brut", action="store_false", help="Conserver les dalles brutes")
+    parser.add_argument("--garder-brut", dest="supprimer_brut", action="store_false", help="Conserver les dalles brutes (supprimées par défaut après agrégation)")
     parser.add_argument("--workers", type=int, default=2, help="Nombre de téléchargements parallèles (défaut: 2)")
     parser.add_argument("--max-dalles", type=int, default=None, help="Limite le nombre de dalles à traiter")
     args = parser.parse_args()
@@ -306,7 +301,7 @@ def main():
     dalles_a_traiter = [d for d in dalles if d["nom_fichier"] not in journal]
     print(f"Dalles restantes à traiter : {len(dalles_a_traiter)} / {total_dalles}")
 
-    lock_save = Lock()
+    lock_save = RLock()  # réentrant : le handler SIGINT peut sauvegarder pendant une sauvegarde
 
     def sauvegarder_rasters():
         with lock_save:
@@ -377,7 +372,7 @@ def main():
     generer_apercu_png(couvert_global, png_path)
 
     print("\n" + "=" * 70)
-    print("Session de traitement terminée avec succès !")
+    print("Traitement terminé.")
     print(f"Dalles ajoutées au journal : {nb_succes}")
     print(f"Total dalles traitées dans journal_dalles.json : {len(journal)}")
     print("=" * 70)

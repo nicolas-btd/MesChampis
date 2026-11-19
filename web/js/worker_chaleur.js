@@ -1,5 +1,5 @@
 /**
- * MesChampis — Web Worker de calcul de carte de chaleur écologique (Étape 3 / Démo D5)
+ * MesChampis — Web Worker de calcul de carte de chaleur écologique (expérimental)
  * Calcule un score écologique de démonstration (0 à 100) par cellule pour chaque tuile.
  *
  * Critères :

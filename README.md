@@ -1,240 +1,146 @@
 # MesChampis
 
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
-[![License: Open Licence 2.0](https://img.shields.io/badge/License-Etalab%202.0-yellow.svg)](LICENCES.md)
-[![WebGIS: MapLibre GL JS](https://img.shields.io/badge/WebGIS-MapLibre%20GL%20JS-blueviolet.svg)](https://maplibre.org/)
-[![Data: IGN LiDAR HD](https://img.shields.io/badge/Data-IGN%20LiDAR%20HD-green.svg)](https://cartes.gouv.fr/rechercher-une-donnee/dataset/IGNF_MNH-LIDAR-HD)
-[![Resolution: 25m](https://img.shields.io/badge/Resolution-25m%20Gridded-orange.svg)]()
-[![Security: E2E Zero-Knowledge](https://img.shields.io/badge/Security-E2E%20Zero--Knowledge-red.svg)]()
-
-> **High-resolution (25 m) geospatial processing pipeline and interactive WebGIS platform combining LiDAR HD, digital elevation models, and forest inventories for predictive ecological modeling.**
+Interactive web map of forest habitat variables at 25 m resolution over the Puy-de-Dôme (France), built from IGN open data (LiDAR HD, BD ALTI, BD Forêt), with a private, encrypted field notebook for mushroom foraging.
 
 ---
 
 <div align="center">
-  <img src="docs/img/app_desktop.png" alt="MesChampis WebGIS Interactive Platform - Mode Hauteur LiDAR HD" width="850"/>
-  <p><em>Interactive WebGIS interface rendering 25 m gridded canopy height modeling (LiDAR HD 90th percentile) over the Chaîne des Puys (Puy-de-Dôme, France).</em></p>
+  <img src="docs/img/app_desktop.png" alt="MesChampis web map - LiDAR HD canopy height layer" width="850"/>
+  <p><em>Canopy height layer (LiDAR HD, 90th percentile) over the Chaîne des Puys, rendered on the IGN orthophoto basemap.</em></p>
 </div>
 
 ---
 
 ## Overview & Goals
 
-- **High-Resolution Gridded Landscape (25 m)**: Overcomes the ecological limitations of broad vector forest polygons by modeling topographic and vegetative variations on an ultra-fine 25 m raster grid across an entire French department (Puy-de-Dôme, 5,833 km²).
-- **Multi-Sensor Geospatial Fusion**: Seamlessly integrates airborne LiDAR HD (Digital Canopy Height Models at 50 cm), Digital Elevation Models (IGN BD ALTI® 25 m), and vegetative taxonomies (IGN BD Forêt® V2).
-- **Topographic & Micro-Climate Extraction**: Computes continuous slope gradients, 360° circular aspect encoding, canopy density percentages, 90th-percentile tree heights, and exact Euclidean distances to forest edges using spatial transforms (`scipy.ndimage.distance_transform_edt`).
-- **Resilient Batch Processing Pipeline**: Automated harvesting via WFS 2.0 APIs, parallelized downsampling pipelines with automatic crash-recovery logging, and compact binary tiling (9 bytes/cell, gzip-compressed).
-- **Client-Side WebGIS & Zero-Knowledge Architecture**: Hardware-accelerated WebGL rendering (MapLibre GL JS), multi-core background Web Workers for real-time habitat suitability scoring, and end-to-end zero-knowledge encrypted synchronization.
+- **Fine-Grained Forest Description**: BD Forêt polygons are often several hundred hectares wide and hide the terrain inside them. The project resamples everything onto a common 25 m grid (Lambert-93) so that slope, aspect, canopy cover and distance to the forest edge can be read cell by cell.
+- **Open Data Fusion**: Combines the IGN LiDAR HD canopy height model (MNH, 50 cm), the BD ALTI 25 m elevation model and the BD Forêt V2 vegetation map.
+- **Lightweight Static Delivery**: The whole department is packed into small gzip binary tiles that the browser decodes directly, with no backend or tile server.
+- **Privacy First**: Field observations stay on the device (IndexedDB) and can be exported as an encrypted backup file.
 
 ---
 
 ## Technical Stack
 
-- **Language**: Python 3.10+, JavaScript (ES6+ Modules, Web Workers)
-- **Geospatial & Scientific Computing**: Rasterio, GeoPandas, NumPy, SciPy (Spatial Distance Transforms & Morphology), Shapely
-- **Geospatial APIs & Open Data**: IGN WFS 2.0.0, LiDAR HD MNH (Digital Height Model, 50 cm resolution), BD ALTI® 25 m (MNT), BD Forêt® V2
-- **Cartography & WebGIS**: MapLibre GL JS 4.7.1, WebGL, Proj4js (Client-side Lambert-93 `EPSG:2154` $\leftrightarrow$ WGS84 `EPSG:4383` reprojection)
-- **Storage & Offline First**: IndexedDB (Native browser database), PWA Standalone Cache
-- **Cryptography & Security**: Web Crypto API (AES-GCM 256-bit, PBKDF2-SHA-256 with 250,000 iterations), Zero-Knowledge Dual Envelope key derivation
-- **Concurrency & Parallel Computing**: Python `concurrent.futures` / multi-worker batch processing, JavaScript Web Workers
+- **Language**: Python 3.10+, JavaScript (ES modules, Web Worker)
+- **Geospatial Processing**: GeoPandas, Rasterio, rasterstats, Shapely
+- **Scientific Computing**: NumPy, SciPy (`ndimage.distance_transform_edt`, connected-component labelling)
+- **Data Access**: IGN Géoplateforme WFS (LiDAR HD tile catalogue), `requests`
+- **Web Mapping**: MapLibre GL JS 4.7.1, Proj4js (Lambert-93 `EPSG:2154` ↔ WGS84 `EPSG:4326`)
+- **Browser Storage & Crypto**: IndexedDB, Web Crypto API (PBKDF2-SHA-256 + AES-GCM 256)
 
 ---
 
 ## Key Features
 
-- **Department-Wide Coverage**: 5,833 km² processed across the Puy-de-Dôme department, totaling 9,332,232 valid 25 m LiDAR cells.
-- **Ultra-Compact Binary Tiling (v2)**: Custom 9-byte binary cell serialization packaged into $256 \times 256$ tiles (only 45.6 MB total for an entire department, compared to multi-gigabyte Shapefiles).
-- **Dynamic 7-Channel Ecological Shaders**: Real-time client-side switching across 7 ecological variables:
-  1. 🧭 **Aspect / Exposure (`expo`)**: 360° cyclic chromatic wheel (North = Blue, East = Green, South = Orange, West = Purple, Flat = Neutral Grey).
-  2. ⛰️ **Elevation (`alt`)**: Continuous hypsometric gradient from 250 m to 1,900 m.
-  3. 📐 **Slope (`pente`)**: Ground inclination in degrees ($0^\circ \to \ge 35^\circ$).
-  4. 🌿 **Forest Edge Distance (`lisiere`)**: SciPy Euclidean distance transform from 0 to 250 m.
-  5. 🌲 **Dominant Forest Essence (`essence`)**: 14 distinct taxonomic classes (Oak, Beech, Fir, Spruce, Scots Pine, Douglas Fir, etc.).
-  6. 🌳 **Canopy Cover Rate (`couvert`)**: High-precision tree coverage density derived from LiDAR returns ($\ge 3$ m height).
-  7. 📏 **Dominant Canopy Height (`hauteur`)**: 90th-percentile canopy height up to 63.5 m (0.25 m step).
-- **Background Multi-Threaded Heatmap Engine**: Dedicated Web Worker calculating multi-criteria environmental suitability indices and rendering raster overlays in the background without UI stutter.
-- **Zero-Knowledge Field Notebook**: Private GPS observation tracking with automatic spatial snapshotting of all 9 ecological attributes, secured by local AES-GCM encryption (`.mcb` backup container).
-- **Interactive Massif Navigation**: Instant bounds navigation across key mountain massifs (Chaîne des Puys, Massif du Sancy, Livradois-Forez, Combrailles, Bois Noirs).
+- **7 Map Layers at 25 m**: aspect, elevation, slope, distance to forest edge, dominant tree species (14 BD Forêt classes), LiDAR canopy cover (% of points ≥ 3 m) and LiDAR canopy height (90th percentile).
+- **LiDAR-Corrected Forest Mask**: BD Forêt is cross-checked against LiDAR cover. Cells with ≥ 50 % cover are kept as forest after removing clusters smaller than 8 cells and filling holes of 1–2 cells; BD Forêt cells without trees are flagged as clearings or clear-cuts.
+- **Cell Inspector**: Clicking the map shows the decoded values of the cell under the cursor.
+- **Field Notebook**: Observations (found / nothing found) are geolocated and store a snapshot of the cell's habitat values. Data lives in IndexedDB and can be exported/imported as an encrypted `.mcb` file (password → PBKDF2 → AES-GCM).
+- **Quick Navigation**: Shortcut buttons to the main forest areas (Chaîne des Puys, Sancy, Livradois, Combrailles, Bois Noirs).
+- **Demo Mode (`?demo=1`)**: A simulated backend (accounts, encrypted sync, e-mails) used to prototype the future server API, plus an experimental habitat heatmap computed in a Web Worker with a simple hand-tuned scoring rule.
 
 ---
 
-## Architecture & Processing Pipeline
+## Development Steps
 
-```text
-[ IGN Geoportal WFS 2.0 ]       [ BD ALTI® 25 m MNT ]        [ BD Forêt® V2 Vectors ]
-            │                              │                             │
-            ▼                              │                             │
-┌─────────────────────────┐                │                             │
-│ 04a_inventaire_mnh.py   │                │                             │
-│ WFS Polygon Intersection│                │                             │
-└───────────┬─────────────┘                │                             │
-            ▼                              │                             │
-┌─────────────────────────┐                │                             │
-│ 04_couvert.py           │                │                             │
-│ Multi-Worker 50cm->25m  │                │                             │
-│ LiDAR HD Downsampling   │                │                             │
-└───────────┬─────────────┘                │                             │
-            │                              │                             │
-            └──────────────────┬───────────┘                             │
-                               ▼                                         │
-                   ┌─────────────────────────┐                           │
-                   │ 03_grille.py            │◄──────────────────────────┘
-                   │ 9-Byte Binary Packaging │
-                   │ SciPy Edge Transform    │
-                   └───────────┬─────────────┘
-                               ▼
-                   ┌─────────────────────────┐
-                   │ data/out/grille/        │
-                   │ (manifest + 247 tiles)  │
-                   └───────────┬─────────────┘
-                               ▼
-                   ┌─────────────────────────┐
-                   │ MapLibre GL JS WebGIS   │
-                   │ + Web Worker Suitability│
-                   └─────────────────────────┘
-```
-
-### 1. Spatial Inventory & Forest Filtering (`prep/04a_inventaire_mnh.py`)
-Queries the IGN WFS 2.0.0 metadata catalog (`IGNF_LIDAR-HD_METADONNEE:metadata`) and spatially clips 1 km² LiDAR tiles against BD Forêt forest polygons. Eliminates bare agricultural plains, saving ~40% bandwidth and processing overhead.
-
-### 2. Multi-Worker LiDAR HD Ingestion (`prep/04_couvert.py`)
-Multi-threaded worker that downloads raw 50 cm LiDAR MNH tiles, computes canopy cover ($\ge 3$ m height) and 90th-percentile canopy height at 25 m resolution, and logs progress to `journal_dalles.json` for seamless crash resumption.
-
-### 3. Gridded Synthesis & Binary Tiling (`prep/03_grille.py`)
-Fuses the aggregated LiDAR rasters with BD ALTI® 25 m elevation and BD Forêt V2 vegetation layers. Computes gradients, azimut, and continuous non-forest Euclidean distance transforms (`scipy.ndimage.distance_transform_edt`). Generates the 247 gzip-compressed binary tiles and the geographical manifest.
-
-### 4. Web Synchronization & Serving (`prep/02_copier_web.py`)
-Synchronizes tiles and metadata to the static web application structure (`web/data/grille/`).
+1. **Grid Synthesis (`prep/01_parcelles.py`, `prep/03_grille.py`)**:
+   - Rasterisation of BD Forêt, slope and aspect from BD ALTI, Euclidean distance to the forest edge, and export of 256 × 256 binary tiles with a JSON manifest.
+2. **LiDAR HD Integration (`prep/04a_inventaire_mnh.py`, `prep/04_couvert.py`)**:
+   - Query of the LiDAR HD tile catalogue through WFS, filtering against BD Forêt to skip non-forest areas, then threaded download and aggregation of each 1 km tile (2000 × 2000 px at 50 cm → 40 × 40 cells at 25 m). Progress is logged so an interrupted run can resume.
+3. **Web Map (`web/js/grille.js`, `web/js/couleurs.js`, `web/js/legende.js`)**:
+   - Tile decoding with typed arrays, colour palettes per layer, rendering as MapLibre image sources.
+4. **Field Notebook & Encryption (`web/js/carnet.js`, `web/js/db.js`, `web/js/crypto_compte.js`)**:
+   - IndexedDB storage, encrypted export/import, and a client-side key scheme (master key wrapped by password and recovery code) designed for a future end-to-end encrypted sync. The server side is not implemented yet; see `docs/API.md` for the planned contract.
 
 ---
 
-## Binary Tile Specification (v2 Format)
+## Data at a Glance
 
-Each $256 \times 256$ tile is serialized in row-major, little-endian binary format (**9 bytes per cell**, 589,824 bytes uncompressed):
+| Item | Value |
+| :--- | :--- |
+| Grid extent | 5,120 × 4,352 cells (128 km × 109 km, Lambert-93) |
+| Cells with valid LiDAR HD data | 9,332,232 (≈ 5,833 km²) |
+| Tiles exported (cells with forest only) | 247 of 340 |
+| Total size of tiles (gzip) | ≈ 46 MB |
+| Bytes per cell | 9 |
 
-| Channel | Type | Offset | Range / Encoding | Description |
-| :--- | :--- | :---: | :--- | :--- |
-| `foret` | `uint8` | 0 | `[0, 1, 2]` | 1 = Closed forest, 2 = Clearing / Harvested area, 0 = Non-forest |
-| `essence` | `uint8` | 1 | `[0..255]` | Dominant tree species code (`essences.json`, 255 = unknown) |
-| `alt` | `int16` | 2 | Meters (`-32768` = nodata) | Exact elevation from IGN BD ALTI® 25 m DTM |
-| `pente` | `uint8` | 4 | Degrees `[0..90]` (255 = nodata) | Local slope gradient computed at 25 m resolution |
-| `expo` | `uint8` | 5 | 1.5° steps `[0..239]` | Downslope azimuth (0 = North, 60 = East, 120 = South, 180 = West, 254 = flat $<3^\circ$) |
-| `lisiere` | `uint8` | 6 | Meters `[0..250]` | Exact Euclidean distance to nearest non-forest edge |
-| `couvert` | `uint8` | 7 | `% [0..100]` (255 = nodata) | LiDAR HD canopy cover percentage (vegetation $\ge 3$ m) |
-| `hauteur` | `uint8` | 8 | 0.25 m steps `[0..254]` | 90th-percentile LiDAR HD canopy height (up to 63.5 m, 255 = nodata) |
+### Tile Format
 
----
+Each tile is a gzip file of 256 × 256 cells. Layers are stored one after another (row-major, little-endian):
 
-## Benchmark: Vector Polygons vs. 25 m Raster Tiling
-
-| Metric | Traditional Vector BD Forêt (GeoJSON / SHP) | MesChampis 25 m Binary Grids (v2 gzip) | Improvement |
-| :--- | :---: | :---: | :---: |
-| **Storage (Puy-de-Dôme)** | ~480 MB (GeoJSON) | **45.6 MB** (247 tiles) | **~10.5x lighter** |
-| **Spatial Resolution** | 1 polygon = up to 500+ ha (mean elevation) | **25 m individual cells** | **Micro-climate resolution** |
-| **Topographic Fidelity** | Masked by polygon averaging | **Cell-by-cell slope & aspect** | **Full terrain heterogeneity** |
-| **Client Tile Load Time** | 1,200 ms - 3,500 ms (vector parsing) | **< 35 ms per tile** (TypedArray unpack) | **~50x faster rendering** |
-| **LiDAR HD Fusion** | Incompatible without rasterization | **Native layer fusion** | **Seamless canopy integration** |
+| Layer | Type | Encoding |
+| :--- | :--- | :--- |
+| `foret` | `uint8` | 0 = non-forest, 1 = forest, 2 = clearing / clear-cut (LiDAR) |
+| `essence` | `uint8` | Species code (see `essences.json`), 255 = forest outside BD Forêt |
+| `alt` | `int16` | Metres, -32768 = no data |
+| `pente` | `uint8` | Degrees, 255 = no data |
+| `expo` | `uint8` | Azimuth in 1.5° steps (0–239), 254 = flat (< 3°), 255 = no data |
+| `lisiere` | `uint8` | Distance to forest edge in metres, capped at 250 |
+| `couvert` | `uint8` | LiDAR cover in %, 255 = no data |
+| `hauteur` | `uint8` | Canopy height in 0.25 m steps, 255 = no data |
 
 ---
 
 ## Quick Start
 
-### 1. Prerequisites & Environment Setup
+### Installation
 
 ```bash
-# Clone the repository
 git clone https://github.com/nicolas-btd/MesChampis.git
 cd MesChampis
-
-# Create and activate Python virtual environment
-python3 -m venv .venv
-source .venv/bin/activate
-
-# Install geospatial dependencies
-pip install -r prep/requirements.txt
 ```
 
-### 2. Running the Data Pipeline (Optional — Pre-generated data included)
+### Running the Web App
+
+The pre-built 25 m tiles for the Puy-de-Dôme are included in `web/data/grille/`, so the map works right after cloning:
 
 ```bash
-# 1. Filter LiDAR tiles against forest boundaries
-python prep/04a_inventaire_mnh.py
-
-# 2. Parallel downsampling of LiDAR MNH tiles (50 cm -> 25 m)
-python prep/04_couvert.py --workers 4 --supprimer-brut
-
-# 3. Generate 25 m binary raster grid & calculate topographic gradients
-python prep/03_grille.py
-
-# 4. Synchronize data to the web app
-python prep/02_copier_web.py
-```
-
-### 3. Launching the Interactive WebGIS Application
-
-```bash
-# Launch local static server
 python3 -m http.server 8000 --directory web
 ```
 
-Open **[http://localhost:8000](http://localhost:8000)** in your browser.  
-To run with the interactive simulation studio and testing controls, open **[http://localhost:8000?demo=1](http://localhost:8000?demo=1)**.
+Open [http://localhost:8000](http://localhost:8000), or [http://localhost:8000?demo=1](http://localhost:8000?demo=1) for the demo mode.
 
-### 4. Running Unit Tests
+### Rebuilding the Data (optional)
 
-Open **[http://localhost:8000/tests.html](http://localhost:8000/tests.html)** to execute the browser test suite (isolated against `meschampis_db_test`), validating Web Crypto AES-GCM operations, 25 m tile edge alignments, and coordinate reprojections.
+Raw IGN data is not included. Download BD Forêt V2 and BD ALTI 25 m for département 63 from the IGN Géoplateforme into `data/raw/bdforet/` and `data/raw/bdalti/`, then run:
 
----
+```bash
+# 0. Python environment
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r prep/requirements.txt
 
-## Repository Structure
+# 1. List the LiDAR HD tiles that intersect forests
+python prep/04a_inventaire_mnh.py
 
-```text
-MesChampis/
-├── data/
-│   ├── raw/
-│   │   ├── bdforet/          # IGN BD Forêt® V2 shapefiles
-│   │   ├── bdalti/           # IGN BD ALTI® 25 m elevation rasters (.asc)
-│   │   └── mnh/              # LiDAR HD inventory and tile tracking logs
-│   └── out/
-│       ├── parcelles.geojson # Optional vector forest boundaries
-│       └── grille/           # 247 compressed binary tiles (v2) + manifest.json
-├── prep/                     # Python Geospatial Processing Pipeline
-│   ├── requirements.txt      # GeoPandas, Rasterio, NumPy, SciPy
-│   ├── 01_parcelles.py       # BD Forêt vector preprocessing
-│   ├── 02_copier_web.py      # Web synchronization script
-│   ├── 03_grille.py          # 25 m raster synthesis & SciPy distance transforms
-│   ├── 04a_inventaire_mnh.py # IGN WFS 2.0 query & spatial intersection
-│   └── 04_couvert.py         # Multi-worker LiDAR downsampling (50 cm -> 25 m)
-├── web/                      # Standalone WebGIS Client (No external runtime)
-│   ├── index.html            # Main map interface & HUD
-│   ├── style.css             # Naturalist design & mobile glassmorphism
-│   ├── tests.html            # Unit test harness (E2E crypto, spatial bounds)
-│   ├── vendor/               # Local vendor dependencies (MapLibre GL JS, Proj4js)
-│   ├── js/
-│   │   ├── main.js           # Application orchestrator
-│   │   ├── carte.js          # MapLibre GL engine & IGN layer controllers
-│   │   ├── grille.js         # WebGL binary tile decoder & coordinate reprojection
-│   │   ├── worker_chaleur.js # Web Worker for environmental suitability calculation
-│   │   ├── carte_chaleur.js  # Heatmap rendering manager
-│   │   ├── db.js             # IndexedDB & Web Crypto PBKDF2/AES-GCM storage
-│   │   ├── crypto_compte.js  # Dual-envelope zero-knowledge cryptography
-│   │   └── panneau_demo.js   # Interactive simulation & demo studio (?demo=1)
-│   └── data/
-│       ├── especes.json      # Taxonomic species inventory (Massif central)
-│       └── grille/           # Web-ready raster tiles & manifest
-├── docs/
-│   └── API.md                # REST & Zero-Knowledge API specifications
-├── LICENCES.md               # Detailed licensing for all open data and dependencies
-└── README.md
+# 2. Download and aggregate LiDAR tiles (50 cm -> 25 m)
+python prep/04_couvert.py --workers 4
+
+# 3. Build the 25 m grid and binary tiles
+python prep/03_grille.py
+
+# 4. Copy the tiles into the web app
+python prep/02_copier_web.py
 ```
 
+### Tests
+
+```bash
+python prep/test_mnh.py
+python prep/03_grille.py --test
+```
+
+Browser tests (encryption round-trip, tile decoding, tile-edge alignment, reprojection) run at [http://localhost:8000/tests.html](http://localhost:8000/tests.html), on a separate test database.
+
 ---
 
-## Data Licenses & Ethics
+## Data & Licences
 
-- **IGN BD Forêt® V2 & BD ALTI® 25 m**: [Licence Ouverte Etalab 2.0](https://www.etalab.gouv.fr/licence-ouverte-open-licence/)
-- **IGN LiDAR HD MNH**: [Licence Ouverte Etalab 2.0](https://cartes.gouv.fr/rechercher-une-donnee/dataset/IGNF_MNH-LIDAR-HD)
-- **Cartographic Basemaps**: IGN Orthophoto & Plan IGN via Géoplateforme
-- **MapLibre GL JS**: BSD-3-Clause License
-- **Proj4js**: MIT License
-- **Zero-Knowledge Privacy**: All spatial calculations and personal observations remain client-side on the user's hardware.
+- **IGN BD Forêt V2, BD ALTI 25 m, LiDAR HD MNH**: [Licence Ouverte Etalab 2.0](https://www.etalab.gouv.fr/licence-ouverte-open-licence/)
+- **Basemaps**: Plan IGN and IGN orthophotos via the Géoplateforme
+- **MapLibre GL JS**: BSD-3-Clause
+- **Proj4js**: MIT
+
+Details in [LICENCES.md](LICENCES.md).
+
+> Mushroom identification is never provided by this app. Always have your harvest checked by a pharmacist or a mycological society before eating it.

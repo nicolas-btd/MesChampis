@@ -37,11 +37,11 @@
   <div id="summary"></div>
 
   <script type="module">
-    // Garde-fou strict C1 : interdiction absolue d'ouvrir la base de production 'meschampis_db'
+    // Garde-fou : interdiction d'ouvrir la base de production 'meschampis_db'
     const originalOpen = indexedDB.open.bind(indexedDB);
     indexedDB.open = function(name, ...args) {
       if (name === 'meschampis_db') {
-        const msg = "GARDE-FOU C1 ENCLENCHÉ : Tentative interdite d'accéder à 'meschampis_db' depuis tests.html !";
+        const msg = "Garde-fou : tentative interdite d'accéder à 'meschampis_db' depuis tests.html !";
         console.error(msg);
         document.body.insertAdjacentHTML('afterbegin', `<div style="background:#ef4444;color:white;padding:1rem;font-weight:bold;margin-bottom:1rem;">${msg}</div>`);
         throw new Error(msg);
@@ -66,7 +66,6 @@
       exporterSauvegardeChiffree,
       importerSauvegardeChiffree
     } from './js/db.js';
-    import { droits, peutVoirRecommandations } from './js/droits.js';
     import {
       genererCodeSecours,
       creerTrousseauInscription,
@@ -99,7 +98,7 @@
       return new Promise((resolve) => {
         const req = indexedDB.deleteDatabase(DB_TEST);
         req.onsuccess = () => {
-          console.log('[nettoyerBaseTest] Base de test supprimée avec succès.');
+          console.log('[nettoyerBaseTest] Base de test supprimée.');
           resolve();
         };
         req.onerror = () => {
@@ -292,7 +291,7 @@ Données réinjectées identiques au bit près (${restoreData.cueillettes.length
         report("Test 3 : Fusion d'import avec gestion des conflits (modifie_le)", false, err.message);
       }
 
-      // Test 4 : Modèle B1 et persistance IndexedDB
+      // Test 4 : Modèle d'observation et persistance IndexedDB
       try {
         const db = await ouvrirBase(DB_TEST);
         const testId = "b1-test-" + Date.now();
@@ -311,7 +310,7 @@ Données réinjectées identiques au bit près (${restoreData.cueillettes.length
           source_position: "gps",
           arbres: ["Chêne"],
           milieu: ["Lisière", "Clairière"],
-          note: "Test B1 modèle complet",
+          note: "Observation de test complète",
           cellule: {
             version_grille: "2026-10-31",
             tx: 10, ty: 12, col: 50, lig: 60,
@@ -324,17 +323,17 @@ Données réinjectées identiques au bit près (${restoreData.cueillettes.length
         const relu = await obtenirCueillette(testId, DB_TEST);
 
         if (!relu || relu.espece_nom !== "Amanite des Césars" || relu.cellule.version_grille !== "2026-10-31" || relu.cellule.hauteur !== 18) {
-          throw new Error("Erreur de persistance ou altération des champs du modèle B1");
+          throw new Error("Erreur de persistance ou altération des champs du modèle d'observation");
         }
 
         // Nettoyage de l'enregistrement de test
         await supprimerCueillette(testId, DB_TEST);
 
-        report("Test 4 : Modèle B1 et conformité des champs (version_grille, couvert, hauteur)", true,
-          "Champs vérifiés avec succès dans IndexedDB (base isolée meschampis_db_test) : espece {nom, latin}, quantite, precision_m, arbres, milieu, cellule {version_grille, alt, pente, expo, lisiere, couvert, hauteur}."
+        report("Test 4 : Modèle d'observation et conformité des champs (version_grille, couvert, hauteur)", true,
+          "Champs vérifiés dans IndexedDB (base isolée meschampis_db_test) : espece {nom, latin}, quantite, precision_m, arbres, milieu, cellule {version_grille, alt, pente, expo, lisiere, couvert, hauteur}."
         );
       } catch (err) {
-        report("Test 4 : Modèle B1 et conformité des champs (version_grille, couvert, hauteur)", false, err.message);
+        report("Test 4 : Modèle d'observation et conformité des champs (version_grille, couvert, hauteur)", false, err.message);
       }
 
       // Test 5 : 5 cellules au hasard — instantané identique au décodage direct des octets du .bin.gz
@@ -504,35 +503,22 @@ Données réinjectées identiques au bit près (${restoreData.cueillettes.length
       }
 
       // =========================================================================
-      // Test 8 : Module droits et filtrage strict des métadonnées .mcb (C8)
+      // Test 8 : Filtrage des métadonnées exportées dans le .mcb
       // =========================================================================
       try {
-        // 1. Validation de l'objet droits
-        const d = droits();
-        if (d.connecte !== true || d.premium !== false || d.essai_fin !== null || d.essai_utilise !== false) {
-          throw new Error('droits() ne renvoie pas l\'état par défaut attendu : ' + JSON.stringify(d));
-        }
-        if (peutVoirRecommandations() !== false) {
-          throw new Error('peutVoirRecommandations() devrait renvoyer false par défaut');
-        }
-
-        // 2. Préparation du store meta avec des clés variées
-        await definirMeta('essai_utilise', true, DB_TEST);
+        // 1. Préparation du store meta avec des clés variées
         await definirMeta('contribution_autorisee', false, DB_TEST);
         await definirMeta('dernier_export', '2026-11-01T12:00:00.000Z', DB_TEST);
         await definirMeta('avertissement_securite_vu', true, DB_TEST);
         await definirMeta('message_standalone_vu', true, DB_TEST);
         await definirMeta('stockage_persistant', true, DB_TEST);
 
-        // 3. Export chiffré
+        // 2. Export chiffré
         const pass = 'UneSuperPhraseDePasseSecret12345';
         const mcbJson = await exporterSauvegardeChiffree(pass, DB_TEST);
         const payload = await dechiffrerSauvegarde(mcbJson, pass);
 
         const metaExportees = Array.isArray(payload.meta) ? payload.meta.map(m => m.id) : [];
-        if (!metaExportees.includes('essai_utilise')) {
-          throw new Error('essai_utilise doit être exporté dans le .mcb');
-        }
         if (!metaExportees.includes('contribution_autorisee')) {
           throw new Error('contribution_autorisee doit être exporté dans le .mcb');
         }
@@ -544,30 +530,29 @@ Données réinjectées identiques au bit près (${restoreData.cueillettes.length
           }
         }
 
-        // 4. Test d'import : essai_utilise ne doit JAMAIS être effacé s'il était true localement
-        // Simuler un import dont essai_utilise est false
+        // 3. Import : un choix local existant n'est pas écrasé par la sauvegarde
         const payloadImport = {
           cueillettes: [],
-          meta: [{ id: 'essai_utilise', valeur: false }],
+          meta: [{ id: 'contribution_autorisee', valeur: true }],
           exporte_le: new Date().toISOString()
         };
         const mcbImport = await chiffrerSauvegarde(pass, payloadImport);
         await importerSauvegardeChiffree(mcbImport, pass, DB_TEST);
 
-        const essaiLocalApresImport = await obtenirMeta('essai_utilise', DB_TEST);
-        if (essaiLocalApresImport !== true) {
-          throw new Error(`essai_utilise a été écrasé à ${essaiLocalApresImport} alors qu'il ne doit jamais être effacé`);
+        const contributionApresImport = await obtenirMeta('contribution_autorisee', DB_TEST);
+        if (contributionApresImport !== false) {
+          throw new Error(`contribution_autorisee a été écrasé à ${contributionApresImport} alors que le choix local doit être conservé`);
         }
 
-        report("Test 8 : Droits, filtrage des métadonnées .mcb et règle essai_utilise à l'import", true,
-          `Droits conformes (connecte: true, premium: false). Métadonnées exportées filtrées strictement (essai_utilise et contribution_autorisee inclus ; dernier_export, messages et persist exclus). Règle de non-effacement de essai_utilise validée.`
+        report("Test 8 : Filtrage des métadonnées .mcb et conservation des choix locaux à l'import", true,
+          `Seule contribution_autorisee est exportée (dernier_export, messages et persist exclus). Le choix local n'est pas écrasé à l'import.`
         );
       } catch (err) {
-        report("Test 8 : Droits, filtrage des métadonnées .mcb et règle essai_utilise à l'import", false, err.message);
+        report("Test 8 : Filtrage des métadonnées .mcb et conservation des choix locaux à l'import", false, err.message);
       }
 
       // =========================================================================
-      // Test 9 : Cryptographie compte Zero-Knowledge (D3)
+      // Test 9 : Cryptographie compte Zero-Knowledge
       // =========================================================================
       try {
         const mdpInitial = 'MonSuperMotDePasse123!';
@@ -614,15 +599,15 @@ Données réinjectées identiques au bit près (${restoreData.cueillettes.length
           throw new Error('Altération des données lors du cycle chiffrement/déchiffrement du bloc carnet');
         }
 
-        report("Test 9 : Cryptographie compte Zero-Knowledge (D3)", true,
+        report("Test 9 : Cryptographie compte Zero-Knowledge", true,
           `Trousseau validé : clé maître AES-256 (32 octets), dérivation séparée de l'empreinte auth (64 hex), double enveloppe (mot de passe et code de secours ${codeSecours}). Bloc carnet chiffré et déchiffré à l'identique.`
         );
       } catch (err) {
-        report("Test 9 : Cryptographie compte Zero-Knowledge (D3)", false, err.message);
+        report("Test 9 : Cryptographie compte Zero-Knowledge", false, err.message);
       }
 
       // =========================================================================
-      // Test 10 : Mot de passe oublié — Scénarios (a), (b) et (c) (D3)
+      // Test 10 : Mot de passe oublié — trois scénarios
       // =========================================================================
       try {
         const mdpInitial = 'PremierMotDePasse123';
@@ -668,11 +653,11 @@ Données réinjectées identiques au bit près (${restoreData.cueillettes.length
         }
         if (!rejetSecours) throw new Error('Un faux code de secours aurait dû être rejeté par AES-GCM');
 
-        report("Test 10 : Mot de passe oublié — Scénarios (a), (b) et (c) (D3)", true,
+        report("Test 10 : Mot de passe oublié — trois scénarios", true,
           `Tous les scénarios validés : (a) ré-enveloppement avec clé maître en mémoire ; (b) déverrouillage via code de secours lisible et ré-enveloppement ; (c) rejet strict par AES-GCM si informations incorrectes (données irrécupérables).`
         );
       } catch (err) {
-        report("Test 10 : Mot de passe oublié — Scénarios (a), (b) et (c) (D3)", false, err.message);
+        report("Test 10 : Mot de passe oublié — trois scénarios", false, err.message);
       }
 
       // Nettoyage final de la base de test
@@ -689,7 +674,7 @@ Données réinjectées identiques au bit près (${restoreData.cueillettes.length
         </div>
       `).join('');
 
-      summaryDiv.textContent = `Résultat global : ${passed} / ${passed + failed} tests passés avec succès.`;
+      summaryDiv.textContent = `Résultat global : ${passed} / ${passed + failed} tests passés.`;
       summaryDiv.style.color = failed === 0 ? '#34d399' : '#f87171';
       window.testSuiteResults = { passed, failed, total: passed + failed, logs };
     }

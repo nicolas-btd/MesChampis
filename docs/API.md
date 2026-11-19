@@ -1,6 +1,6 @@
-# Spécification de l'API MesChampis (Contrat d'API — Étape 6)
+# Spécification de l'API MesChampis
 
-Ce document constitue le cahier des charges officiel de l'API serveur pour l'étape 6.
+Ce document décrit le contrat prévu pour le futur serveur de synchronisation (non implémenté à ce jour).
 Il décrit chaque point d'accès (endpoint), les structures de données attendues et renvoyées, ainsi que la gestion des erreurs.
 
 ## 1. Principes d'architecture & Sécurité Zero-Knowledge
@@ -279,70 +279,16 @@ Il décrit chaque point d'accès (endpoint), les structures de données attendue
 
 ---
 
-## 5. Endpoints des droits, essai gratuit et abonnement
+## 5. État du compte
 
-### 5.1. Consultation des droits
-- **Méthode / Action :** `droits()`
-- **Route future :** `GET /api/v1/compte/droits`
+### 5.1. Consultation de la session
+- **Méthode / Action :** `etatCompte()`
+- **Route future :** `GET /api/v1/compte/etat`
 - **En-têtes :** Optionnel (`Authorization: Bearer <jeton_session>`)
 - **Réponse succès (200) :**
   ```json
   {
     "connecte": true,
-    "email": "cueilleur@example.com",
-    "premium": false,
-    "essai_debut": null,
-    "essai_fin": null,
-    "essai_utilise": false,
-    "statut_abonnement": "aucun"
-  }
-  ```
-
----
-
-### 5.2. Démarrage de l'essai de 7 jours
-- **Méthode / Action :** `demarrerEssai()`
-- **Route future :** `POST /api/v1/compte/demarrer-essai`
-- **En-têtes :** `Authorization: Bearer <jeton_session>`
-- **Réponse succès (200) :**
-  ```json
-  {
-    "succes": true,
-    "essai_debut": "2026-11-02T10:30:00.000Z",
-    "essai_fin": "2026-11-09T10:30:00.000Z"
-  }
-  ```
-- **Erreurs possibles :** `ESSAI_DEJA_UTILISE` (l'essai gratuit est strictement unique par compte).
-
----
-
-### 5.3. Création de session de paiement (Stripe Checkout)
-- **Méthode / Action :** `creerSessionPaiement(offre)`
-- **Route future :** `POST /api/v1/paiement/creer-session`
-- **Corps de la requête :**
-  ```json
-  {
-    "offre": "pass_saison"
-  }
-  ```
-  *(Offres valides : `"pass_saison"` à 29€, `"annuel"` à 49€)*.
-- **Réponse succès (200) :**
-  ```json
-  {
-    "session_url": "https://checkout.stripe.com/c/pay/cs_live_...",
-    "session_id": "cs_live_..."
-  }
-  ```
-
----
-
-### 5.4. Accès au portail client Stripe (Gestion d'abonnement / Résiliation)
-- **Méthode / Action :** `portailClient()`
-- **Route future :** `POST /api/v1/paiement/portail-client`
-- **En-têtes :** `Authorization: Bearer <jeton_session>`
-- **Réponse succès (200) :**
-  ```json
-  {
-    "url": "https://billing.stripe.com/p/session/..."
+    "email": "cueilleur@example.com"
   }
   ```

@@ -804,7 +804,7 @@ html, body {
   margin-top: 0.3rem;
 }
 
-/* Bloc d'information sur la zone pilote LiDAR HD */
+/* Bloc d'information sur la couverture LiDAR HD */
 .pilot-zone-box {
   background: rgba(77, 130, 106, 0.1);
   border: 1px solid rgba(77, 130, 106, 0.3);
@@ -1206,7 +1206,7 @@ html, body {
 }
 
 /* ==============================================================================
-   Étape 3 — Carnet de cueillette privé (IndexedDB + Crypto)
+   Carnet de cueillette privé (IndexedDB + Crypto)
    ============================================================================== */
 
 /* Bouton dans le header */
@@ -2512,7 +2512,7 @@ html, body {
 }
 
 /* =============================================================================
-   Étape 3 — Démo D : Styles pour les écrans complets, Stripe et Panneau Démo
+   Écrans plein page et panneau démo
    ============================================================================= */
 
 /* Flou sur la carte lors de l'accueil non-connecté */
@@ -2824,7 +2824,6 @@ body:has(#demo-permanent-banner:not(.hidden)) .side-panel {
 .modal-auth-card,
 .modal-secours-card,
 .modal-mdp-oublie-card,
-.modal-offres-card,
 .modal-reglages-card,
 .modal-milieux-card {
   max-width: 480px;
@@ -2911,203 +2910,6 @@ body:has(#demo-permanent-banner:not(.hidden)) .side-panel {
 
 .badge-green { background: rgba(74, 112, 94, 0.25); color: #98d1b3; border: 1px solid rgba(74, 112, 94, 0.4); }
 .badge-blue { background: rgba(201, 115, 52, 0.2); color: #f1b382; border: 1px solid rgba(201, 115, 52, 0.4); }
-
-/* Offres & Abonnement */
-.modal-offres-card {
-  max-width: 620px;
-}
-
-.bloc-essai-box {
-  background: linear-gradient(135deg, rgba(74, 112, 94, 0.22) 0%, rgba(20, 35, 28, 0.4) 100%);
-  border: 1px solid rgba(74, 112, 94, 0.45);
-  border-radius: 14px;
-  padding: 18px;
-  text-align: center;
-  margin-bottom: 1.5rem;
-}
-
-.essai-badge {
-  display: inline-block;
-  background: #4a705e;
-  color: #f5efe6;
-  font-weight: 800;
-  font-size: 0.78rem;
-  padding: 3px 12px;
-  border-radius: 999px;
-  margin-bottom: 8px;
-  letter-spacing: 0.04em;
-}
-
-.offres-separator {
-  text-align: center;
-  position: relative;
-  margin: 1.5rem 0 1rem 0;
-}
-.offres-separator span {
-  background: #141f18;
-  padding: 0 14px;
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  letter-spacing: 1px;
-}
-
-.offres-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.offre-card {
-  background: rgba(225, 215, 195, 0.03);
-  border: 1px solid var(--border-natural);
-  border-radius: 12px;
-  padding: 20px 18px;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  transition: transform 0.2s ease, border-color 0.2s ease;
-}
-
-.offre-card:hover {
-  border-color: rgba(201, 115, 52, 0.35);
-  transform: translateY(-2px);
-}
-
-.offre-card-featured {
-  border-color: rgba(201, 115, 52, 0.6);
-  background: linear-gradient(160deg, rgba(201, 115, 52, 0.08) 0%, rgba(26, 38, 30, 0.4) 100%);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-}
-
-.offre-badge {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  margin-bottom: 4px;
-}
-
-.badge-popular {
-  color: #f1b382;
-}
-
-.offre-price {
-  font-family: var(--font-mono);
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: var(--text-main);
-  margin: 6px 0;
-}
-.offre-price span {
-  font-family: var(--font-sans);
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  font-weight: 400;
-}
-
-.offre-desc {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  line-height: 1.45;
-  margin-bottom: 12px;
-}
-
-.offre-points {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 18px 0;
-  font-size: 0.8rem;
-  color: var(--text-main);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  flex: 1;
-}
-
-/* Modale Imitation Stripe */
-.modal-stripe-card {
-  background: #ffffff;
-  color: #0f172a;
-  border-radius: 16px;
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
-  max-width: 440px;
-  width: 95%;
-  overflow: hidden;
-}
-
-.stripe-top-bar {
-  background: #f1f5f9;
-  padding: 12px 16px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.stripe-logo {
-  font-size: 1.15rem;
-  color: #6366f1;
-  letter-spacing: -0.5px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.stripe-mode-badge {
-  background: #e0e7ff;
-  color: #4338ca;
-  font-size: 0.68rem;
-  padding: 2px 6px;
-  border-radius: 6px;
-  font-weight: 600;
-}
-
-.stripe-body {
-  padding: 20px 24px;
-}
-
-.stripe-fake-input {
-  display: flex;
-  align-items: center;
-  background: #f8fafc;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  padding: 0 10px;
-}
-
-.stripe-input {
-  background: transparent !important;
-  border: none !important;
-  color: #0f172a !important;
-  font-size: 0.95rem !important;
-  padding: 10px 4px !important;
-}
-
-.btn-stripe-pay {
-  background: #6366f1;
-  color: #ffffff;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 700;
-  min-height: 48px;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
-  transition: background 0.2s;
-}
-.btn-stripe-pay:hover { background: #4f46e5; }
-
-.btn-stripe-fail {
-  background: #fee2e2;
-  color: #b91c1c;
-  border: 1px solid #fca5a5;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  min-height: 44px;
-  cursor: pointer;
-}
-.btn-stripe-fail:hover { background: #fecaca; }
 
 /* Réglages compte */
 .reglages-item {
@@ -3338,9 +3140,6 @@ body:has(#demo-permanent-banner:not(.hidden)) .side-panel {
 @media (max-width: 640px) {
   .hero-actions {
     flex-direction: column;
-  }
-  .offres-grid {
-    grid-template-columns: 1fr;
   }
   .demo-buttons-grid {
     grid-template-columns: 1fr;

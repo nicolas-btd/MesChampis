@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-MesChampis — Phase A : Inventaire des dalles MNH LiDAR HD IGN
+MesChampis — Inventaire des dalles MNH LiDAR HD IGN
 Support multi-massifs et découpage en 4 parties pour couvrir le reste du 63.
 
 Ce script :

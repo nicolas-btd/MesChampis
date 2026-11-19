@@ -58,20 +58,8 @@ export async function telechargerCarnet() {
   return getBackend().telechargerCarnet();
 }
 
-export async function droits() {
-  return getBackend().droits();
-}
-
-export async function demarrerEssai() {
-  return getBackend().demarrerEssai();
-}
-
-export async function creerSessionPaiement(offre) {
-  return getBackend().creerSessionPaiement(offre);
-}
-
-export async function portailClient() {
-  return getBackend().portailClient();
+export async function etatCompte() {
+  return getBackend().etatCompte();
 }
 
 export async function supprimerCompte() {
@@ -85,7 +73,6 @@ export const serveurSimuleControl = {
   dateVirtuelle: apiSimulee.dateVirtuelle,
   listerEmailsSimules: apiSimulee.listerEmailsSimules,
   purgerEmailsSimules: apiSimulee.purgerEmailsSimules,
-  simulerWebhookPaiement: apiSimulee.simulerWebhookPaiement,
   purgerServeurSimule: apiSimulee.purgerServeurSimule
 };
 

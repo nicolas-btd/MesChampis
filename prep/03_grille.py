@@ -1,23 +1,16 @@
 #!/usr/bin/env python3
 """
-Étape 1 bis : Génération d'une grille raster de 25 m et tuilage binaire
-MesChampis - Webapp non lucrative d'aide à la cueillette de champignons
+Génération de la grille raster 25 m et du tuilage binaire (MesChampis).
 
 Ce script :
 1. Détermine l'emprise de la BD Forêt (+ marge 500 m) alignée sur un pas de 25 m (EPSG:2154).
-2. Rasterise la BD Forêt :
-   - Couche 1 : 'foret' (uint8, 1 si forêt fermée, 0 sinon)
-   - Couche 2 : 'essence' (uint8, code essence, 0 = hors forêt)
-3. Calcule la distance à la lisière non-forêt :
-   - Couche 6 : 'lisiere' (uint8, 0 à 250 m, distance_transform_edt * 25)
-4. Rééchantillonne et aligne le MNT BD ALTI 25 m sur la grille :
-   - Couche 3 : 'alt' (int16, -32768 = nodata)
-   - Couche 4 : 'pente' (uint8, degrés arrondis, 255 = nodata)
-   - Couche 5 : 'expo' (uint8, 0-239 par pas de 1.5°, 254 = plat, 255 = nodata)
-5. Découpe en tuiles de 256x256 cellules :
-   - Exclut les tuiles sans aucune cellule forêt
-   - Exporte chaque tuile en format binaire compressé gzip (foret, essence, alt, pente, expo, lisiere)
-6. Produit manifest.json et essences.json dans data/out/grille/
+2. Rasterise la BD Forêt : couches 'foret' et 'essence'.
+3. Intègre le MNH LiDAR HD agrégé (mnh_couvert.tif, mnh_hauteur.tif) s'il est présent :
+   corrige le masque forêt (1 = forêt, 2 = coupe/clairière) et ajoute 'couvert' et 'hauteur'.
+4. Calcule la distance à la lisière ('lisiere', 0 à 250 m, distance_transform_edt).
+5. Rééchantillonne le MNT BD ALTI 25 m : 'alt' (int16), 'pente' (uint8), 'expo' (uint8, pas de 1.5°).
+6. Découpe en tuiles 256x256 (9 octets/cellule, gzip), en ignorant les tuiles sans forêt.
+7. Écrit manifest.json et essences.json dans data/out/grille/.
 """
 
 from __future__ import annotations
@@ -124,7 +117,7 @@ def tester_grille() -> None:
     1. MNT incliné vers le nord -> exposition ≈ 0° après encodage/décodage.
     2. Aller-retour binaire d'une tuile (compression gzip -> décompression) identique.
     """
-    print("=== Tests de validation algorithmique (Étape 1 bis) ===")
+    print("=== Tests de validation de la grille ===")
 
     # Test 1 : MNT synthétique incliné vers le nord
     y = np.arange(5)[:, None]
@@ -138,42 +131,29 @@ def tester_grille() -> None:
     assert abs(val_dec - 0.0) < 1.5, f"Erreur test 1 : attendu ≈ 0°, obtenu {val_dec}°"
     print(f"  [OK] Test 1 : MNT vers le nord -> encodé {val_enc}, décodé {val_dec:.1f}° (attendu ≈ 0°)")
 
-    # Test 2 : Aller-retour d'une tuile binaire (256x256)
-    t_foret = np.random.randint(0, 2, size=(256, 256), dtype=np.uint8)
-    t_essence = np.random.randint(0, 15, size=(256, 256), dtype=np.uint8)
-    t_alt = np.random.randint(300, 1500, size=(256, 256), dtype=np.int16)
-    t_pente = np.random.randint(0, 45, size=(256, 256), dtype=np.uint8)
-    t_expo = np.random.randint(0, 240, size=(256, 256), dtype=np.uint8)
-    t_lisiere = np.random.randint(0, 251, size=(256, 256), dtype=np.uint8)
+    # Test 2 : Aller-retour d'une tuile binaire 256x256 (8 couches, 9 octets/cellule)
+    rng = np.random.default_rng(0)
+    couches = [
+        ("foret", rng.integers(0, 3, (256, 256), dtype=np.uint8)),
+        ("essence", rng.integers(0, 15, (256, 256), dtype=np.uint8)),
+        ("alt", rng.integers(300, 1500, (256, 256)).astype("<i2")),
+        ("pente", rng.integers(0, 45, (256, 256), dtype=np.uint8)),
+        ("expo", rng.integers(0, 240, (256, 256), dtype=np.uint8)),
+        ("lisiere", rng.integers(0, 251, (256, 256), dtype=np.uint8)),
+        ("couvert", rng.integers(0, 101, (256, 256), dtype=np.uint8)),
+        ("hauteur", rng.integers(0, 255, (256, 256), dtype=np.uint8)),
+    ]
+    buf_decomp = gzip.decompress(gzip.compress(b"".join(c.tobytes() for _, c in couches), compresslevel=6))
+    assert len(buf_decomp) == 256 * 256 * 9, "Erreur test 2 : taille de tuile inattendue"
 
-    buf_raw = (
-        t_foret.tobytes() +
-        t_essence.tobytes() +
-        t_alt.astype('<i2').tobytes() +
-        t_pente.tobytes() +
-        t_expo.tobytes() +
-        t_lisiere.tobytes()
-    )
-    buf_comp = gzip.compress(buf_raw, compresslevel=6)
-    buf_decomp = gzip.decompress(buf_comp)
+    offset = 0
+    for nom, attendu in couches:
+        relu = np.frombuffer(buf_decomp, dtype=attendu.dtype, count=attendu.size, offset=offset).reshape(attendu.shape)
+        assert np.array_equal(attendu, relu), f"Erreur test 2 : couche {nom} altérée"
+        offset += attendu.nbytes
 
-    N = 256 * 256
-    r_foret = np.frombuffer(buf_decomp, dtype=np.uint8, count=N, offset=0).reshape((256, 256))
-    r_essence = np.frombuffer(buf_decomp, dtype=np.uint8, count=N, offset=N).reshape((256, 256))
-    r_alt = np.frombuffer(buf_decomp, dtype='<i2', count=N, offset=N * 2).reshape((256, 256))
-    r_pente = np.frombuffer(buf_decomp, dtype=np.uint8, count=N, offset=N * 4).reshape((256, 256))
-    r_expo = np.frombuffer(buf_decomp, dtype=np.uint8, count=N, offset=N * 5).reshape((256, 256))
-    r_lisiere = np.frombuffer(buf_decomp, dtype=np.uint8, count=N, offset=N * 6).reshape((256, 256))
-
-    assert np.array_equal(t_foret, r_foret), "Erreur test 2 : couche foret altérée"
-    assert np.array_equal(t_essence, r_essence), "Erreur test 2 : couche essence altérée"
-    assert np.array_equal(t_alt, r_alt), "Erreur test 2 : couche alt altérée"
-    assert np.array_equal(t_pente, r_pente), "Erreur test 2 : couche pente altérée"
-    assert np.array_equal(t_expo, r_expo), "Erreur test 2 : couche expo altérée"
-    assert np.array_equal(t_lisiere, r_lisiere), "Erreur test 2 : couche lisiere altérée"
-
-    print("  [OK] Test 2 : Aller-retour tuile binaire compressée gzip validé à 100%")
-    print("=== Tous les tests de validation ont réussi avec succès ! ===\n")
+    print("  [OK] Test 2 : aller-retour gzip d'une tuile 9 octets/cellule")
+    print("=== Tous les tests sont passés ===\n")
 
 
 # ==============================================================================
@@ -298,7 +278,7 @@ def main() -> None:
     print(f"Couche essence rasterisée en {time.time() - t0:.2f} s")
 
     # --------------------------------------------------------------------------
-    # 2 bis. Intégration du MNH LiDAR HD (Zone Pilote tx: 6..8, ty: 7..9)
+    # 2 bis. Intégration du MNH LiDAR HD (couvert et hauteur agrégés à 25 m)
     # --------------------------------------------------------------------------
     print("\n--- Étape 2 bis : Intégration MNH LiDAR HD (couvert, hauteur, masque forêt) ---")
     couche_couvert = np.full((H, W), 255, dtype=np.uint8)
@@ -307,14 +287,13 @@ def main() -> None:
     fichier_mnh_couvert = dossier_out / "mnh_couvert.tif"
     fichier_mnh_hauteur = dossier_out / "mnh_hauteur.tif"
 
-    tuiles_pilote_coords = {(tx, ty) for tx in range(6, 9) for ty in range(7, 10)}
-    pilote_stats = {
+    stats_lidar = {
         "nb_foret_bd": 0,
         "nb_foret_mnh": 0,
         "accord_strict": 0,
         "nb_foret_2_ouvert": 0,
         "nb_foret_hors_bd": 0,
-        "nb_total_cellules_pilote": 9 * 256 * 256,
+        "nb_cellules_lidar": 0,
     }
 
     if fichier_mnh_couvert.exists() and fichier_mnh_hauteur.exists():
@@ -379,12 +358,12 @@ def main() -> None:
             couche_essence[masque_valide_mnh & (couche_foret == 1) & (foret_bd_avant == 0)] = 255
 
             # Calcul des statistiques
-            pilote_stats["nb_foret_bd"] = int(np.count_nonzero((foret_bd_avant == 1) & masque_valide_mnh))
-            pilote_stats["nb_foret_mnh"] = int(np.count_nonzero((couche_foret == 1) & masque_valide_mnh))
-            pilote_stats["accord_strict"] = int(np.count_nonzero(((foret_bd_avant == 1) == (couche_foret == 1)) & masque_valide_mnh))
-            pilote_stats["nb_foret_2_ouvert"] = int(np.count_nonzero((couche_foret == 2) & masque_valide_mnh))
-            pilote_stats["nb_foret_hors_bd"] = int(np.count_nonzero((couche_foret == 1) & (foret_bd_avant == 0) & masque_valide_mnh))
-            pilote_stats["nb_total_cellules_pilote"] = int(nb_valides)
+            stats_lidar["nb_foret_bd"] = int(np.count_nonzero((foret_bd_avant == 1) & masque_valide_mnh))
+            stats_lidar["nb_foret_mnh"] = int(np.count_nonzero((couche_foret == 1) & masque_valide_mnh))
+            stats_lidar["accord_strict"] = int(np.count_nonzero(((foret_bd_avant == 1) == (couche_foret == 1)) & masque_valide_mnh))
+            stats_lidar["nb_foret_2_ouvert"] = int(np.count_nonzero((couche_foret == 2) & masque_valide_mnh))
+            stats_lidar["nb_foret_hors_bd"] = int(np.count_nonzero((couche_foret == 1) & (foret_bd_avant == 0) & masque_valide_mnh))
+            stats_lidar["nb_cellules_lidar"] = int(nb_valides)
     else:
         print("[ATTENTION] Fichiers MNH introuvables. Mode BD Forêt seul.")
 
@@ -448,6 +427,21 @@ def main() -> None:
     # Couche exposition (uint8, codée 0-239, 254 = plat < 3°, 255 = nodata)
     couche_expo = encoder_exposition(expo_deg, pente_deg)
 
+    # Millésime LiDAR par tuile : année majoritaire des dalles 1 km dont le centre tombe dans la tuile
+    millesimes_par_tuile: dict[tuple[int, int], dict[int, int]] = {}
+    fichier_inventaire = racine / "data" / "raw" / "mnh" / "inventaire.json"
+    if fichier_inventaire.exists():
+        with open(fichier_inventaire, "r", encoding="utf-8") as f:
+            for dalle in json.load(f).get("dalles", []):
+                annee = dalle.get("millesime")
+                if annee is None:
+                    continue
+                cx = (dalle["bbox_l93"][0] + dalle["bbox_l93"][2]) / 2.0
+                cy = (dalle["bbox_l93"][1] + dalle["bbox_l93"][3]) / 2.0
+                cle = (int((cx - grid_minx) // (pas * 256)), int((grid_maxy - cy) // (pas * 256)))
+                compte = millesimes_par_tuile.setdefault(cle, {})
+                compte[int(annee)] = compte.get(int(annee), 0) + 1
+
     # --------------------------------------------------------------------------
     # 5. Découpage en tuiles binaires v2 (9 octets/cellule) et export gzip
     # --------------------------------------------------------------------------
@@ -500,10 +494,11 @@ def main() -> None:
             total_octets += len(compressed_bytes)
             tuiles_existantes.append(nom_tuile)
 
-            is_pilote = (tx, ty) in tuiles_pilote_coords
+            a_lidar = bool(np.any(t_couvert != 255))
+            compte_annees = millesimes_par_tuile.get((tx, ty))
             tuiles_meta[nom_tuile] = {
-                "mnh": is_pilote,
-                "lidar_millesime": 2022 if is_pilote else None
+                "mnh": a_lidar,
+                "lidar_millesime": max(compte_annees, key=compte_annees.get) if (a_lidar and compte_annees) else None
             }
 
     # --------------------------------------------------------------------------
@@ -646,18 +641,18 @@ def main() -> None:
     print(f"Poids moyen par tuile             : {poids_moyen_ko:.1f} Ko")
     print(f"Fichiers de métadonnées           : manifest.json v2 & essences.json")
 
-    if pilote_stats["nb_total_cellules_pilote"] > 0:
-        tot_p = pilote_stats["nb_total_cellules_pilote"]
-        pct_bd = pilote_stats["nb_foret_bd"] / tot_p * 100
-        pct_mnh = pilote_stats["nb_foret_mnh"] / tot_p * 100
-        pct_accord = pilote_stats["accord_strict"] / tot_p * 100
-        print("\n--- RAPPORT CHIFFRÉ ZONE PILOTE (3x3 tuiles, 19.2 km x 19.2 km) ---")
-        print(f"Total cellules pilote            : {tot_p}")
-        print(f"Forêt selon BD Forêt             : {pilote_stats['nb_foret_bd']} ({pct_bd:.2f} %)")
-        print(f"Forêt selon MNH LiDAR HD         : {pilote_stats['nb_foret_mnh']} ({pct_mnh:.2f} %)")
-        print(f"Accord strict BD Forêt / MNH     : {pilote_stats['accord_strict']} ({pct_accord:.2f} %)")
-        print(f"Cellules ouvertes en forêt (code 2) : {pilote_stats['nb_foret_2_ouvert']}")
-        print(f"Cellules forêt hors BD Forêt (code 255): {pilote_stats['nb_foret_hors_bd']}")
+    if stats_lidar["nb_cellules_lidar"] > 0:
+        tot_p = stats_lidar["nb_cellules_lidar"]
+        pct_bd = stats_lidar["nb_foret_bd"] / tot_p * 100
+        pct_mnh = stats_lidar["nb_foret_mnh"] / tot_p * 100
+        pct_accord = stats_lidar["accord_strict"] / tot_p * 100
+        print("\n--- COMPARAISON BD FORÊT / MNH LIDAR HD (cellules couvertes par le LiDAR) ---")
+        print(f"Cellules couvertes par le LiDAR  : {tot_p}")
+        print(f"Forêt selon BD Forêt             : {stats_lidar['nb_foret_bd']} ({pct_bd:.2f} %)")
+        print(f"Forêt selon MNH LiDAR HD         : {stats_lidar['nb_foret_mnh']} ({pct_mnh:.2f} %)")
+        print(f"Accord strict BD Forêt / MNH     : {stats_lidar['accord_strict']} ({pct_accord:.2f} %)")
+        print(f"Cellules ouvertes en forêt (code 2) : {stats_lidar['nb_foret_2_ouvert']}")
+        print(f"Cellules forêt hors BD Forêt (code 255): {stats_lidar['nb_foret_hors_bd']}")
     print("========================================================")
 
 

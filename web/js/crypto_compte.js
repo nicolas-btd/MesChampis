@@ -1,5 +1,5 @@
 /**
- * MesChampis — Cryptographie client pour compte et sauvegarde chiffrée (Étape 3 / 6)
+ * MesChampis — Cryptographie client pour compte et sauvegarde chiffrée
  * Architecture Zero-Knowledge :
  * - Clé maître AES-256 aléatoire
  * - Double enveloppe :

@@ -160,11 +160,7 @@ export async function inscrire(email, verifMdp, enveloppes) {
     email_verifie: false,
     jeton_verif: jetonVerif,
     jeton_reinit: null,
-    cree_le: dateVirtuelle().toISOString(),
-    essai_debut: null,
-    essai_fin: null,
-    premium_fin: null,
-    statut_abonnement: 'aucun'
+    cree_le: dateVirtuelle().toISOString()
   };
 
   await new Promise((resolve, reject) => {
@@ -504,24 +500,16 @@ export async function telechargerCarnet() {
 }
 
 // -----------------------------------------------------------------------------
-// Droits, Essai gratuit & Abonnements Stripe
+// État du compte
 // -----------------------------------------------------------------------------
 
 /**
- * Récupère l'état des droits et abonnements
+ * Indique si une session est ouverte et pour quel e-mail
  */
-export async function droits() {
+export async function etatCompte() {
   const session = await obtenirSession();
   if (!session) {
-    return {
-      connecte: false,
-      email: null,
-      premium: false,
-      essai_debut: null,
-      essai_fin: null,
-      essai_utilise: false,
-      statut_abonnement: 'aucun'
-    };
+    return { connecte: false, email: null };
   }
 
   const db = await ouvrirServeurDB();
@@ -533,122 +521,11 @@ export async function droits() {
     req.onerror = () => resolve(null);
   });
 
-  if (!compte) {
-    return {
-      connecte: false,
-      email: null,
-      premium: false,
-      essai_debut: null,
-      essai_fin: null,
-      essai_utilise: false,
-      statut_abonnement: 'aucun'
-    };
-  }
-
-  const maintenant = dateVirtuelle().getTime();
-
-  // Vérifier si premium actif
-  let estPremium = false;
-  if (compte.premium_fin) {
-    const finP = new Date(compte.premium_fin).getTime();
-    if (!isNaN(finP) && maintenant < finP) {
-      estPremium = true;
-    }
-  }
-
-  // Vérifier si essai actif
-  let essaiEnCours = false;
-  if (compte.essai_fin) {
-    const finE = new Date(compte.essai_fin).getTime();
-    if (!isNaN(finE) && maintenant < finE) {
-      essaiEnCours = true;
-    }
-  }
-
-  return {
-    connecte: true,
-    email: compte.email,
-    premium: estPremium,
-    essai_debut: compte.essai_debut,
-    essai_fin: compte.essai_fin,
-    essai_actif: essaiEnCours,
-    essai_utilise: Boolean(compte.essai_debut),
-    statut_abonnement: compte.statut_abonnement || (estPremium ? 'actif' : 'aucun')
-  };
-}
-
-/**
- * Déclenche l'essai de 7 jours
- */
-export async function demarrerEssai() {
-  await simulerReseau();
-  const session = await obtenirSession();
-  if (!session) {
-    throw new ErreurApi('NON_AUTHENTIFIE', 'Connexion requise pour démarrer l\'essai.');
-  }
-
-  const db = await ouvrirServeurDB();
-  const compte = await new Promise((resolve) => {
-    const tx = db.transaction('comptes', 'readonly');
-    const store = tx.objectStore('comptes');
-    const req = store.get(session.email);
-    req.onsuccess = () => resolve(req.result || null);
-    req.onerror = () => resolve(null);
-  });
-
-  if (!compte) {
-    throw new ErreurApi('COMPTE_NON_TROUVE', 'Compte introuvable.');
-  }
-
-  if (compte.essai_debut) {
-    throw new ErreurApi('ESSAI_DEJA_UTILISE', 'L\'essai de 7 jours a déjà été activé pour ce compte.');
-  }
-
-  const debut = dateVirtuelle();
-  const fin = new Date(debut.getTime() + 7 * 86400000);
-
-  compte.essai_debut = debut.toISOString();
-  compte.essai_fin = fin.toISOString();
-
-  await new Promise((resolve, reject) => {
-    const tx = db.transaction('comptes', 'readwrite');
-    const store = tx.objectStore('comptes');
-    const req = store.put(compte);
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
-  });
-
-  return {
-    succes: true,
-    essai_debut: compte.essai_debut,
-    essai_fin: compte.essai_fin
-  };
-}
-
-/**
- * Création d'une session de paiement factice
- */
-export async function creerSessionPaiement(offre = 'pass_saison') {
-  await simulerReseau();
-  const session = await obtenirSession();
-  if (!session) {
-    throw new ErreurApi('NON_AUTHENTIFIE', 'Connexion requise pour souscrire.');
-  }
-
-  return {
-    session_url: '#modal-paiement-stripe',
-    session_id: 'cs_demo_' + Date.now(),
-    offre
-  };
-}
-
-export async function portailClient() {
-  await simulerReseau();
-  return { url: '#modal-reglages' };
+  return compte ? { connecte: true, email: compte.email } : { connecte: false, email: null };
 }
 
 // -----------------------------------------------------------------------------
-// Outils de simulation pour le Panneau Démo (D6)
+// Outils de simulation pour le panneau démo
 // -----------------------------------------------------------------------------
 
 async function ajouterEmailSimule({ email, type, sujet, corps, jeton, url_action }) {
@@ -698,50 +575,6 @@ export async function purgerEmailsSimules() {
     req.onsuccess = () => resolve();
     req.onerror = () => reject(req.error);
   });
-}
-
-/**
- * Simule la réception d'un webhook Stripe (succès ou échec de paiement)
- */
-export async function simulerWebhookPaiement(email, statut = 'succes', finMois = 12) {
-  const emailNorm = String(email).trim().toLowerCase();
-  const db = await ouvrirServeurDB();
-
-  const compte = await new Promise((resolve) => {
-    const tx = db.transaction('comptes', 'readonly');
-    const store = tx.objectStore('comptes');
-    const req = store.get(emailNorm);
-    req.onsuccess = () => resolve(req.result || null);
-    req.onerror = () => resolve(null);
-  });
-
-  if (!compte) {
-    throw new ErreurApi('COMPTE_NON_TROUVE', 'Compte introuvable pour ce webhook.');
-  }
-
-  if (statut === 'succes') {
-    const debut = dateVirtuelle();
-    const fin = new Date(debut.getTime() + finMois * 30 * 86400000);
-    compte.premium_fin = fin.toISOString();
-    compte.statut_abonnement = 'actif';
-  } else {
-    // Échec de paiement ou résiliation
-    compte.statut_abonnement = 'paiement_refuse';
-  }
-
-  await new Promise((resolve, reject) => {
-    const tx = db.transaction('comptes', 'readwrite');
-    const store = tx.objectStore('comptes');
-    const req = store.put(compte);
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
-  });
-
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('meschampis:droits-modifies', { detail: { email: emailNorm, statut } }));
-  }
-
-  return { succes: true, statut, compte };
 }
 
 /**
